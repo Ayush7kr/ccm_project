@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block title %}Confirm Delete Campaign — {{ campaign.name }}{% endblock %}
+{% block page_title %}Delete Campaign{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 500px; margin: 2rem auto; text-align: center; padding: 2rem;">
+  <div class="empty-state-icon" style="background-color: var(--danger-light); color: var(--danger); width: 64px; height: 64px; margin: 0 auto 1rem; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+    <i data-lucide="alert-triangle" style="width: 32px; height: 32px;"></i>
+  </div>
+
+  <h3 class="card-title" style="font-size: 1.25rem; margin-bottom: 0.5rem;">Delete Campaign "{{ campaign.name }}"?</h3>
+  <p style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 1.5rem;">
+    This will permanently remove the campaign, its questionnaire, customer assignments, and call logs. This action cannot be undone.
+  </p>
+
+  <form method="POST" action="{% url 'campaign_delete' campaign.pk %}">
+    {% csrf_token %}
+    <div style="display: flex; gap: 1rem; justify-content: center;">
+      <a href="{% url 'campaign_detail' campaign.pk %}" class="btn btn-secondary">Cancel</a>
+      <button type="submit" class="btn btn-danger">
+        <i data-lucide="trash-2"></i> Confirm Delete
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}

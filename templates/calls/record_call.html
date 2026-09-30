@@ -1,0 +1,425 @@
+{% extends 'base.html' %}
+
+{% block title %}Record Call — {{ customer.name }} — CCM{% endblock %}
+{% block page_title %}Tele-caller Live Call Console{% endblock %}
+
+{% block content %}
+<!-- Section 1: Customer Profile Header & Live Call Stopwatch -->
+<div class="card" style="background: linear-gradient(135deg, var(--bg-secondary), var(--primary-light)); border: 1px solid var(--border-color); margin-bottom: 1.5rem; padding: 1.5rem;">
+  <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1.25rem;">
+    <div style="flex: 1; min-width: 280px;">
+      <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.4rem; flex-wrap: wrap;">
+        <span class="badge badge-info" style="font-size: 0.8rem;">
+          <i data-lucide="megaphone" style="width: 13px; height: 13px; vertical-align: middle;"></i> Campaign: {{ campaign.name }}
+        </span>
+        <span class="badge {% if assignment.assignment_status == 'In Progress' %}badge-warning{% else %}badge-secondary{% endif %}">
+          {{ assignment.assignment_status }}
+        </span>
+      </div>
+
+      <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 0.35rem; color: var(--text-main);">
+        {{ customer.name }}
+      </h2>
+
+      <div style="font-size: 0.9rem; color: var(--text-main); display: flex; align-items: center; gap: 1.25rem; flex-wrap: wrap; margin-bottom: 0.5rem;">
+        <span><i data-lucide="phone" style="width: 15px; height: 15px; vertical-align: middle; color: var(--primary);"></i> <strong>{{ customer.phone }}</strong></span>
+        {% if customer.email %}<span><i data-lucide="mail" style="width: 15px; height: 15px; vertical-align: middle; color: var(--text-muted);"></i> {{ customer.email }}</span>{% endif %}
+        {% if customer.company %}<span><i data-lucide="building" style="width: 15px; height: 15px; vertical-align: middle; color: var(--text-muted);"></i> {{ customer.company }}</span>{% endif %}
+        {% if customer.city %}<span><i data-lucide="map-pin" style="width: 15px; height: 15px; vertical-align: middle; color: var(--text-muted);"></i> {{ customer.city }}{% if customer.state %}, {{ customer.state }}{% endif %}</span>{% endif %}
+      </div>
+
+      {% if customer.notes %}
+        <div style="font-size: 0.8rem; background-color: var(--bg-primary); padding: 0.4rem 0.75rem; border-radius: var(--radius-sm); border: 1px dashed var(--border-color); display: inline-block; color: var(--text-muted);">
+          <strong>Customer Profile Note:</strong> {{ customer.notes }}
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Live Call Timer Widget (Start / Pause / Resume / Reset) -->
+    <div style="background-color: var(--bg-secondary); padding: 0.9rem 1.4rem; border-radius: var(--radius-md); border: 1px solid var(--border-color); text-align: center; box-shadow: var(--shadow-sm); min-width: 200px;">
+      <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Call Stopwatch</div>
+      <div id="callTimer" style="font-size: 2rem; font-family: monospace; font-weight: 800; color: var(--primary); margin: 0.2rem 0;">00:00</div>
+      
+      <div style="display: flex; gap: 0.4rem; justify-content: center; flex-wrap: wrap;">
+        <button type="button" id="startTimerBtn" class="btn btn-primary btn-sm" style="display: none; padding: 3px 10px; font-size: 0.75rem;">
+          <i data-lucide="play" style="width: 13px; height: 13px;"></i> Start
+        </button>
+        <button type="button" id="pauseTimerBtn" class="btn btn-warning btn-sm" style="padding: 3px 10px; font-size: 0.75rem;">
+          <i data-lucide="pause" style="width: 13px; height: 13px;"></i> Pause
+        </button>
+        <button type="button" id="resumeTimerBtn" class="btn btn-success btn-sm" style="display: none; padding: 3px 10px; font-size: 0.75rem;">
+          <i data-lucide="play" style="width: 13px; height: 13px;"></i> Resume
+        </button>
+        <button type="button" id="resetTimerBtn" class="btn btn-outline btn-sm" style="padding: 3px 10px; font-size: 0.75rem;">
+          <i data-lucide="rotate-ccw" style="width: 13px; height: 13px;"></i> Reset
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="responsive-grid-2-1">
+  <!-- Call Recording Form -->
+  <form method="POST" action="{% url 'record_call' assignment.pk %}" id="callConsoleForm">
+    {% csrf_token %}
+    <input type="hidden" name="duration" id="durationSecondsInput" value="0">
+
+    <!-- Section 2: Call Outcome Status -->
+    <div class="card" style="margin-bottom: 1.5rem;">
+      <h3 class="card-title" style="margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+        <i data-lucide="phone-call" style="width: 18px; height: 18px; color: var(--primary);"></i> Call Outcome & Disposition
+      </h3>
+
+      <div class="form-group" style="margin-bottom: 1.25rem;">
+        <label for="call_status" style="font-weight: 700; font-size: 0.95rem;">
+          Select Call Outcome Status <span style="color: var(--danger);">*</span>
+        </label>
+        <select id="call_status" name="call_status" class="form-select" required style="font-size: 1rem; font-weight: 600; padding: 0.75rem; border-color: var(--primary);">
+          <option value="">-- Select Call Outcome --</option>
+          <option value="Completed">✓ Call Completed & Questionnaire Answered</option>
+          <option value="No Answer">✕ No Answer / Ringing</option>
+          <option value="Unreachable">✕ Unreachable / Switched Off</option>
+          <option value="Busy">✕ Line Busy / Call Waiting</option>
+          <option value="Follow-up Required">🕒 Follow-up Required / Requested Callback</option>
+        </select>
+      </div>
+
+      <div class="form-group" style="margin-bottom: 0;">
+        <label for="comments" style="font-weight: 600;">Call Conversation Notes & Objections</label>
+        <textarea id="comments" name="comments" class="form-textarea" rows="3" placeholder="Key points discussed, customer objections, specific requests, or context for future callbacks..."></textarea>
+      </div>
+    </div>
+
+    <!-- Section 3: Campaign Questionnaire (Professional Call Script) -->
+    <div class="card" id="questionnaireSection" style="display: none; margin-bottom: 1.5rem; border-top: 3px solid var(--success);">
+      <div class="card-header" style="padding-bottom: 0.75rem;">
+        <div>
+          <h3 class="card-title" style="display: flex; align-items: center; gap: 0.5rem;">
+            <i data-lucide="file-question" style="width: 18px; height: 18px; color: var(--success);"></i> Campaign Call Script & Questionnaire
+          </h3>
+          <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
+            Structured responses required for questions marked with <span class="badge badge-danger" style="font-size: 0.65rem;">* Required</span>
+          </p>
+        </div>
+      </div>
+
+      {% if questions %}
+        <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+          {% for q in questions %}
+            <div class="question-block" data-q-id="{{ q.id }}" data-required="{% if q.required %}true{% else %}false{% endif %}" data-type="{{ q.question_type }}" style="padding: 1.1rem; border: 1px solid var(--border-color); border-radius: var(--radius-md); background-color: var(--bg-primary);">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; margin-bottom: 0.75rem;">
+                <label style="font-weight: 700; font-size: 0.95rem; color: var(--text-main); margin: 0;">
+                  {{ forloop.counter }}. {{ q.question_text }}
+                </label>
+                {% if q.required %}
+                  <span class="badge badge-danger" style="font-size: 0.7rem; font-weight: 700;">* Required</span>
+                {% else %}
+                  <span class="badge badge-secondary" style="font-size: 0.7rem;">Optional</span>
+                {% endif %}
+              </div>
+
+              {% if q.question_type == 'single_choice' %}
+                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                  {% for opt in q.options %}
+                    <label style="display: flex; align-items: center; gap: 0.6rem; cursor: pointer; font-size: 0.9rem; padding: 0.25rem 0;">
+                      <input type="radio" name="question_{{ q.id }}" value="{{ opt }}" style="width: 16px; height: 16px;">
+                      <span>{{ opt }}</span>
+                    </label>
+                  {% endfor %}
+                </div>
+
+              {% elif q.question_type == 'multiple_choice' %}
+                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                  {% for opt in q.options %}
+                    <label style="display: flex; align-items: center; gap: 0.6rem; cursor: pointer; font-size: 0.9rem; padding: 0.25rem 0;">
+                      <input type="checkbox" name="question_{{ q.id }}" value="{{ opt }}" style="width: 16px; height: 16px;">
+                      <span>{{ opt }}</span>
+                    </label>
+                  {% endfor %}
+                </div>
+
+              {% elif q.question_type == 'rating_scale' %}
+                <div>
+                  <div style="display: flex; gap: 1rem; align-items: center; margin-top: 0.25rem;">
+                    {% for num in "12345" %}
+                      <label style="display: flex; flex-direction: column; align-items: center; gap: 0.25rem; font-size: 0.85rem; cursor: pointer; padding: 0.4rem 0.6rem; border: 1px solid var(--border-color); border-radius: var(--radius-sm); min-width: 44px; text-align: center; background-color: var(--bg-secondary);">
+                        <input type="radio" name="question_{{ q.id }}" value="{{ num }}">
+                        <span style="font-weight: 700; color: #f59e0b;">{{ num }} ★</span>
+                      </label>
+                    {% endfor %}
+                  </div>
+                  <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); margin-top: 0.4rem; max-width: 320px;">
+                    <span>1 = Poor / Not Important</span>
+                    <span>5 = Excellent / Critical</span>
+                  </div>
+                </div>
+
+              {% elif q.question_type == 'yes_no' %}
+                <div style="display: flex; gap: 1rem;">
+                  <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem 1.25rem; border: 1px solid var(--border-color); border-radius: var(--radius-sm); background-color: var(--bg-secondary); font-weight: 600;">
+                    <input type="radio" name="question_{{ q.id }}" value="Yes" style="width: 16px; height: 16px;"> Yes
+                  </label>
+                  <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem 1.25rem; border: 1px solid var(--border-color); border-radius: var(--radius-sm); background-color: var(--bg-secondary); font-weight: 600;">
+                    <input type="radio" name="question_{{ q.id }}" value="No" style="width: 16px; height: 16px;"> No
+                  </label>
+                </div>
+
+              {% else %}
+                <textarea name="question_{{ q.id }}" class="form-textarea" rows="3" placeholder="Enter customer's detailed response or comments..."></textarea>
+              {% endif %}
+
+              <div class="q-error-msg" style="display: none; color: var(--danger); font-size: 0.8rem; margin-top: 0.5rem; font-weight: 600;">
+                <i data-lucide="alert-circle" style="width: 14px; height: 14px; vertical-align: middle;"></i> Please answer this required question.
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div style="color: var(--text-muted); font-size: 0.85rem; padding: 0.5rem;">No questionnaire questions attached to this campaign.</div>
+      {% endif %}
+    </div>
+
+    <!-- Section 4: Schedule Follow-up -->
+    <div class="card" id="followupSection" style="margin-bottom: 1.5rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+        <h3 class="card-title" style="font-size: 1rem; display: flex; align-items: center; gap: 0.4rem;">
+          <i data-lucide="calendar" style="width: 17px; height: 17px; color: var(--primary);"></i> Schedule Callback / Follow-up
+        </h3>
+        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.85rem; font-weight: 600;">
+          <input type="checkbox" id="schedule_followup" name="schedule_followup"> Enable Callback
+        </label>
+      </div>
+
+      <div id="followupFields" style="display: none;">
+        <div class="responsive-grid-1-1" style="margin-bottom: 0.75rem;">
+          <div class="form-group">
+            <label for="followup_date">Scheduled Callback Date <span style="color: var(--danger);" id="fuDateReq">*</span></label>
+            <input type="date" id="followup_date" name="followup_date" class="form-control">
+          </div>
+          <div class="form-group">
+            <label for="followup_time">Scheduled Callback Time <span style="color: var(--danger);" id="fuTimeReq">*</span></label>
+            <input type="time" id="followup_time" name="followup_time" class="form-control" value="10:30">
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="followup_notes">Callback Reason / Note</label>
+          <input type="text" id="followup_notes" name="followup_notes" class="form-control" placeholder="e.g. Requested pricing comparison or callback with decision maker">
+        </div>
+      </div>
+    </div>
+
+    <!-- Submit Action Button -->
+    <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-bottom: 2rem;">
+      <a href="{% url 'campaign_detail' campaign.pk %}" class="btn btn-secondary">Cancel</a>
+      <button type="submit" id="submitCallBtn" class="btn btn-primary" style="padding: 0.75rem 1.75rem; font-size: 1rem; font-weight: 700;">
+        <i data-lucide="check-circle-2"></i> Save Call Log
+      </button>
+    </div>
+  </form>
+
+  <!-- Sidebar: Call History & Past Timeline -->
+  <div>
+    <div class="card" style="position: sticky; top: 1rem;">
+      <h3 class="card-title" style="margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+        <i data-lucide="history" style="width: 17px; height: 17px; color: var(--primary);"></i> Interaction History
+      </h3>
+      <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">Prior calls and recorded feedback for {{ customer.name }}</p>
+
+      {% for call in previous_calls %}
+        <div style="padding: 0.75rem 0; border-bottom: 1px solid var(--border-color); font-size: 0.85rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <span class="badge {% if call.call_status == 'Completed' %}badge-success{% elif call.call_status == 'Follow-up Required' %}badge-warning{% else %}badge-info{% endif %}">
+              {{ call.call_status }}
+            </span>
+            <span style="font-size: 0.75rem; color: var(--text-muted);">{{ call.created_at|date:"d M, H:i" }}</span>
+          </div>
+          <div style="color: var(--text-main); line-height: 1.4; margin-top: 3px;">
+            {{ call.comments|default:"No notes entered."|truncatewords:15 }}
+          </div>
+          {% if call.duration > 0 %}
+            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 3px;">
+              Duration: <strong>{{ call.duration }}s</strong> &bull; Caller: {{ call.telecaller.get_full_name|default:call.telecaller.username }}
+            </div>
+          {% endif %}
+        </div>
+      {% empty %}
+        <div style="text-align: center; color: var(--text-muted); font-size: 0.85rem; padding: 1.5rem 0;">
+          <i data-lucide="phone-off" style="width: 24px; height: 24px; display: block; margin: 0 auto 0.5rem; opacity: 0.5;"></i>
+          No prior call records found for this customer.
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    // 1. Live Call Stopwatch (Start, Pause, Resume, Reset)
+    let seconds = 0;
+    let timerInterval = null;
+    let isSubmitting = false;
+
+    const timerDisplay = document.getElementById('callTimer');
+    const durationInput = document.getElementById('durationSecondsInput');
+    const startBtn = document.getElementById('startTimerBtn');
+    const pauseBtn = document.getElementById('pauseTimerBtn');
+    const resumeBtn = document.getElementById('resumeTimerBtn');
+    const resetBtn = document.getElementById('resetTimerBtn');
+    const form = document.getElementById('callConsoleForm');
+    const submitBtn = document.getElementById('submitCallBtn');
+
+    function formatTimer(sec) {
+      const mins = Math.floor(sec / 60);
+      const remainder = sec % 60;
+      return `${mins.toString().padStart(2, '0')}:${remainder.toString().padStart(2, '0')}`;
+    }
+
+    function startTimer() {
+      if (!timerInterval) {
+        timerInterval = setInterval(() => {
+          seconds++;
+          timerDisplay.textContent = formatTimer(seconds);
+          durationInput.value = seconds;
+        }, 1000);
+      }
+      if (startBtn) startBtn.style.display = 'none';
+      if (resumeBtn) resumeBtn.style.display = 'none';
+      if (pauseBtn) pauseBtn.style.display = 'inline-flex';
+    }
+
+    function pauseTimer() {
+      clearInterval(timerInterval);
+      timerInterval = null;
+      if (pauseBtn) pauseBtn.style.display = 'none';
+      if (resumeBtn) resumeBtn.style.display = 'inline-flex';
+    }
+
+    function resetTimer() {
+      clearInterval(timerInterval);
+      timerInterval = null;
+      seconds = 0;
+      timerDisplay.textContent = '00:00';
+      durationInput.value = 0;
+      if (pauseBtn) pauseBtn.style.display = 'none';
+      if (resumeBtn) resumeBtn.style.display = 'none';
+      if (startBtn) startBtn.style.display = 'inline-flex';
+    }
+
+    // Auto-start timer on page load
+    startTimer();
+
+    if (startBtn) startBtn.addEventListener('click', startTimer);
+    if (pauseBtn) pauseBtn.addEventListener('click', pauseTimer);
+    if (resumeBtn) resumeBtn.addEventListener('click', startTimer);
+    if (resetBtn) resetBtn.addEventListener('click', resetTimer);
+
+    // 2. Dynamic Form Toggles
+    const statusSelect = document.getElementById('call_status');
+    const questionnaireSec = document.getElementById('questionnaireSection');
+    const followupCheckbox = document.getElementById('schedule_followup');
+    const followupFields = document.getElementById('followupFields');
+
+    function syncFormState() {
+      if (!statusSelect) return;
+      const val = statusSelect.value;
+      if (val === 'Completed') {
+        questionnaireSec.style.display = 'block';
+      } else {
+        questionnaireSec.style.display = 'none';
+      }
+
+      if (val === 'Follow-up Required') {
+        followupCheckbox.checked = true;
+        followupFields.style.display = 'block';
+      } else if (followupCheckbox.checked) {
+        followupFields.style.display = 'block';
+      } else {
+        followupFields.style.display = 'none';
+      }
+    }
+
+    if (statusSelect) {
+      statusSelect.addEventListener('change', syncFormState);
+      syncFormState();
+    }
+
+    if (followupCheckbox) {
+      followupCheckbox.addEventListener('change', () => {
+        followupFields.style.display = followupCheckbox.checked ? 'block' : 'none';
+      });
+    }
+
+    // 3. Client-side Validation & Prevent Duplicate Submissions
+    if (form) {
+      form.addEventListener('submit', (e) => {
+        const val = statusSelect ? statusSelect.value : '';
+        let hasValidationError = false;
+
+        // If Completed, validate all required questionnaire fields
+        if (val === 'Completed') {
+          const qBlocks = document.querySelectorAll('.question-block');
+          qBlocks.forEach(block => {
+            const isReq = block.getAttribute('data-required') === 'true';
+            const qId = block.getAttribute('data-q-id');
+            const qType = block.getAttribute('data-type');
+            const errMsg = block.querySelector('.q-error-msg');
+
+            if (isReq) {
+              let answered = false;
+              if (qType === 'single_choice' || qType === 'rating_scale' || qType === 'yes_no') {
+                const checked = block.querySelector(`input[name="question_${qId}"]:checked`);
+                if (checked) answered = true;
+              } else if (qType === 'multiple_choice') {
+                const checked = block.querySelectorAll(`input[name="question_${qId}"]:checked`);
+                if (checked.length > 0) answered = true;
+              } else if (qType === 'open_ended') {
+                const txt = block.querySelector(`textarea[name="question_${qId}"]`);
+                if (txt && txt.value.trim().length > 0) answered = true;
+              }
+
+              if (!answered) {
+                hasValidationError = true;
+                block.style.borderColor = 'var(--danger)';
+                if (errMsg) errMsg.style.display = 'block';
+              } else {
+                block.style.borderColor = 'var(--border-color)';
+                if (errMsg) errMsg.style.display = 'none';
+              }
+            }
+          });
+        }
+
+        // Validate follow-up date/time if follow-up enabled
+        if (val === 'Follow-up Required' || (followupCheckbox && followupCheckbox.checked)) {
+          const fuDate = document.getElementById('followup_date');
+          const fuTime = document.getElementById('followup_time');
+          if (!fuDate.value || !fuTime.value) {
+            alert('Please specify both date and time for the scheduled follow-up.');
+            hasValidationError = true;
+          }
+        }
+
+        if (hasValidationError) {
+          e.preventDefault();
+          return false;
+        }
+
+        // Disable submit button to prevent double submissions
+        isSubmitting = true;
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.innerHTML = '<i data-lucide="loader" class="spin"></i> Saving Call Record...';
+          if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+      });
+    }
+
+    window.addEventListener('beforeunload', (e) => {
+      if (!isSubmitting && seconds > 15) {
+        e.preventDefault();
+        e.returnValue = 'You have an active call recording in progress. Are you sure you want to leave?';
+      }
+    });
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+
+{% block title %}Assign Customers — CCM{% endblock %}
+{% block page_title %}Bulk Customer Assignment{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 900px; margin: 0 auto;">
+  <div class="card-header">
+    <div>
+      <h3 class="card-title">Assign Customers to Tele-callers</h3>
+      <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">Select campaign, tele-caller agent, and check target customers to allocate workload</p>
+    </div>
+    <a href="{% url 'customer_list' %}" class="btn btn-outline btn-sm">
+      <i data-lucide="arrow-left"></i> Directory
+    </a>
+  </div>
+
+  <form method="POST" action="{% url 'customer_assign' %}" id="assignForm">
+    {% csrf_token %}
+
+    <div class="responsive-grid-1-1" style="margin-bottom: 1.5rem;">
+      <div class="form-group">
+        <label for="campaign_id">1. Target Campaign *</label>
+        <select id="campaign_id" name="campaign_id" class="form-select" required>
+          <option value="">-- Select Campaign --</option>
+          {% for c in campaigns %}
+            <option value="{{ c.id }}">{{ c.name }} ({{ c.status }})</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="telecaller_id">2. Assigned Tele-caller Agent *</label>
+        <select id="telecaller_id" name="telecaller_id" class="form-select" required>
+          <option value="">-- Select Tele-caller --</option>
+          {% for tc in telecallers %}
+            <option value="{{ tc.id }}">{{ tc.get_full_name|default:tc.username }} (@{{ tc.username }})</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div style="margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
+      <h4 style="font-size: 0.95rem; font-weight: 600;">3. Select Customers to Assign</h4>
+      <button type="button" id="selectAllBtn" class="btn btn-outline btn-sm">Select All</button>
+    </div>
+
+    <div class="table-responsive" style="max-height: 350px; overflow-y: auto; margin-bottom: 1.5rem;">
+      <table class="table">
+        <thead>
+          <tr>
+            <th style="width: 40px;"><input type="checkbox" id="masterCheckbox"></th>
+            <th>Customer Name</th>
+            <th>Phone</th>
+            <th>Email</th>
+            <th>Company</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for cust in customers %}
+          <tr>
+            <td><input type="checkbox" name="customer_ids" value="{{ cust.id }}" class="cust-checkbox"></td>
+            <td><strong>{{ cust.name }}</strong></td>
+            <td>{{ cust.phone }}</td>
+            <td>{{ cust.email|default:"—" }}</td>
+            <td>{{ cust.company|default:"—" }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">No customers available.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div style="display: flex; justify-content: flex-end; gap: 1rem;">
+      <a href="{% url 'customer_list' %}" class="btn btn-secondary">Cancel</a>
+      <button type="submit" class="btn btn-primary" data-confirm="Confirm assigning selected customers to the designated tele-caller?">
+        <i data-lucide="user-check"></i> Complete Assignment
+      </button>
+    </div>
+  </form>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const master = document.getElementById('masterCheckbox');
+    const checkboxes = document.querySelectorAll('.cust-checkbox');
+    const selectAllBtn = document.getElementById('selectAllBtn');
+
+    if (master) {
+      master.addEventListener('change', () => {
+        checkboxes.forEach(cb => cb.checked = master.checked);
+      });
+    }
+
+    if (selectAllBtn) {
+      selectAllBtn.addEventListener('click', () => {
+        const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+        checkboxes.forEach(cb => cb.checked = !allChecked);
+        if (master) master.checked = !allChecked;
+      });
+    }
+  });
+</script>
+{% endblock %}

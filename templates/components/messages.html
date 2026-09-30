@@ -1,0 +1,16 @@
+{% if messages %}
+  <div style="margin-bottom: 1.5rem;">
+    {% for message in messages %}
+      <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %}">
+        {% if message.tags == 'success' %}
+          <i data-lucide="check-circle" style="width: 18px; height: 18px;"></i>
+        {% elif message.tags == 'error' or message.tags == 'danger' %}
+          <i data-lucide="alert-circle" style="width: 18px; height: 18px;"></i>
+        {% else %}
+          <i data-lucide="info" style="width: 18px; height: 18px;"></i>
+        {% endif %}
+        <span>{{ message }}</span>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}

@@ -1,0 +1,54 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}CCM — Campaign Call Manager{% endblock %}</title>
+  
+  <!-- CSS Design System -->
+  <link rel="stylesheet" href="{% static 'css/main.css' %}">
+  
+  <!-- Lucide Icons & Chart.js -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+{% if user.is_authenticated %}
+<div class="app-layout">
+  <!-- Sidebar Component & Mobile Backdrop -->
+  {% include 'components/sidebar.html' %}
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+  <!-- Main Content Wrapper -->
+  <div class="main-wrapper">
+    <!-- Navbar Component -->
+    {% include 'components/navbar.html' %}
+
+    <!-- Page Content -->
+    <main class="content-area">
+      {% include 'components/messages.html' %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</div>
+{% else %}
+  <div class="auth-wrapper">
+    {% block auth_content %}{% endblock %}
+  </div>
+{% endif %}
+
+<!-- Main Application JS -->
+<script src="{% static 'js/main.js' %}"></script>
+<script>
+  // Initialize Lucide Icons
+  if (typeof lucide !== 'undefined') {
+    lucide.createIcons();
+  }
+</script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,197 @@
+{% extends 'base.html' %}
+
+{% block title %}Questionnaire Builder — {{ campaign.name }} — CCM{% endblock %}
+{% block page_title %}Dynamic Questionnaire Builder{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 900px; margin: 0 auto;">
+  <div class="card-header" style="flex-wrap: wrap; gap: 1rem;">
+    <div>
+      <h3 class="card-title">Questionnaire for {{ campaign.name }}</h3>
+      <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">Configure questions and response choices for tele-callers during live calls</p>
+    </div>
+    <div style="display: flex; gap: 0.75rem;">
+      <a href="{% url 'questionnaire_preview' campaign.pk %}" target="_blank" class="btn btn-outline btn-sm">
+        <i data-lucide="eye"></i> Preview Tele-caller View
+      </a>
+      <a href="{% url 'campaign_detail' campaign.pk %}" class="btn btn-secondary btn-sm">
+        <i data-lucide="arrow-left"></i> Campaign
+      </a>
+    </div>
+  </div>
+
+  <form method="POST" action="{% url 'questionnaire_builder' campaign.pk %}" id="builderForm">
+    {% csrf_token %}
+
+    <div class="form-group">
+      <label for="title">Questionnaire Title *</label>
+      <input type="text" id="title" name="title" class="form-control" value="{{ questionnaire.title|default:'' }}" required placeholder="e.g. Customer Qualification & Interest Survey">
+    </div>
+
+    <div class="form-group">
+      <label for="description">Instructions / Intro for Tele-caller</label>
+      <textarea id="description" name="description" class="form-textarea" rows="2" placeholder="Instructions shown at top of caller console...">{{ questionnaire.description|default:'' }}</textarea>
+    </div>
+
+    <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 1.5rem 0;">
+
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+      <h4 style="font-size: 1.05rem; font-weight: 700;">Questions Roster</h4>
+      <button type="button" id="addQuestionBtn" class="btn btn-primary btn-sm">
+        <i data-lucide="plus"></i> Add Question
+      </button>
+    </div>
+
+    <div id="questionsContainer" style="display: flex; flex-direction: column; gap: 1.25rem;">
+      {% for q in questions %}
+      <div class="question-card card" style="padding: 1.25rem; background-color: var(--bg-primary); border: 1px solid var(--border-color); margin-bottom: 0;">
+        <input type="hidden" name="q_id[]" value="{{ q.id }}">
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+          <span style="font-weight: 700; font-size: 0.9rem; color: var(--text-main);" class="q-number">Question #{{ forloop.counter }}</span>
+          <button type="button" class="btn btn-danger btn-sm remove-q-btn" title="Remove Question">
+            <i data-lucide="trash-2"></i>
+          </button>
+        </div>
+
+        <div class="responsive-grid-2-1-1" style="margin-bottom: 0.75rem;">
+          <div>
+            <label style="font-size: 0.8rem;">Question Prompt *</label>
+            <input type="text" name="q_text[]" class="form-control" value="{{ q.question_text }}" required placeholder="e.g. What billing method do you currently use?">
+          </div>
+
+          <div>
+            <label style="font-size: 0.8rem;">Answer Type *</label>
+            <select name="q_type[]" class="form-select q-type-select">
+              <option value="single_choice" {% if q.question_type == 'single_choice' %}selected{% endif %}>Single Choice</option>
+              <option value="multiple_choice" {% if q.question_type == 'multiple_choice' %}selected{% endif %}>Multiple Choice</option>
+              <option value="rating_scale" {% if q.question_type == 'rating_scale' %}selected{% endif %}>Rating Scale (1-5)</option>
+              <option value="open_ended" {% if q.question_type == 'open_ended' %}selected{% endif %}>Open Ended</option>
+              <option value="yes_no" {% if q.question_type == 'yes_no' %}selected{% endif %}>Yes / No</option>
+            </select>
+          </div>
+
+          <div>
+            <label style="font-size: 0.8rem;">Required?</label>
+            <select name="q_required[]" class="form-select">
+              <option value="1" {% if q.required %}selected{% endif %}>Required</option>
+              <option value="0" {% if not q.required %}selected{% endif %}>Optional</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="options-wrapper" style="{% if q.question_type != 'single_choice' and q.question_type != 'multiple_choice' %}display: none;{% endif %}">
+          <label style="font-size: 0.8rem;">Options (Comma Separated)</label>
+          <input type="text" name="q_options[]" class="form-control" value="{{ q.options|join:', ' }}" placeholder="e.g. Manual, Excel, Software, Other">
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1.75rem;">
+      <a href="{% url 'campaign_detail' campaign.pk %}" class="btn btn-secondary">Cancel</a>
+      <button type="submit" class="btn btn-primary">
+        <i data-lucide="save"></i> Save Questionnaire
+      </button>
+    </div>
+  </form>
+</div>
+
+<!-- Template for New Questions -->
+<template id="questionTemplate">
+  <div class="question-card card" style="padding: 1.25rem; background-color: var(--bg-primary); border: 1px solid var(--border-color); margin-bottom: 0;">
+    <input type="hidden" name="q_id[]" value="">
+
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+      <span style="font-weight: 700; font-size: 0.9rem; color: var(--text-main);" class="q-number">New Question</span>
+      <button type="button" class="btn btn-danger btn-sm remove-q-btn" title="Remove Question">
+        <i data-lucide="trash-2"></i>
+      </button>
+    </div>
+
+    <div class="responsive-grid-2-1-1" style="margin-bottom: 0.75rem;">
+      <div>
+        <label style="font-size: 0.8rem;">Question Prompt *</label>
+        <input type="text" name="q_text[]" class="form-control" required placeholder="Enter question text...">
+      </div>
+
+      <div>
+        <label style="font-size: 0.8rem;">Answer Type *</label>
+        <select name="q_type[]" class="form-select q-type-select">
+          <option value="single_choice">Single Choice</option>
+          <option value="multiple_choice">Multiple Choice</option>
+          <option value="rating_scale">Rating Scale (1-5)</option>
+          <option value="open_ended" selected>Open Ended</option>
+          <option value="yes_no">Yes / No</option>
+        </select>
+      </div>
+
+      <div>
+        <label style="font-size: 0.8rem;">Required?</label>
+        <select name="q_required[]" class="form-select">
+          <option value="1" selected>Required</option>
+          <option value="0">Optional</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="options-wrapper" style="display: none;">
+      <label style="font-size: 0.8rem;">Options (Comma Separated)</label>
+      <input type="text" name="q_options[]" class="form-control" placeholder="e.g. Option A, Option B, Option C">
+    </div>
+  </div>
+</template>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const container = document.getElementById('questionsContainer');
+    const addBtn = document.getElementById('addQuestionBtn');
+    const template = document.getElementById('questionTemplate');
+
+    function updateQuestionNumbers() {
+      const cards = container.querySelectorAll('.question-card');
+      cards.forEach((card, idx) => {
+        const numLabel = card.querySelector('.q-number');
+        if (numLabel) numLabel.textContent = `Question #${idx + 1}`;
+      });
+    }
+
+    function bindEvents(card) {
+      const select = card.querySelector('.q-type-select');
+      const optsWrapper = card.querySelector('.options-wrapper');
+      const removeBtn = card.querySelector('.remove-q-btn');
+
+      if (select && optsWrapper) {
+        select.addEventListener('change', () => {
+          if (select.value === 'single_choice' || select.value === 'multiple_choice') {
+            optsWrapper.style.display = 'block';
+          } else {
+            optsWrapper.style.display = 'none';
+          }
+        });
+      }
+
+      if (removeBtn) {
+        removeBtn.addEventListener('click', () => {
+          card.remove();
+          updateQuestionNumbers();
+        });
+      }
+    }
+
+    // Bind initial cards
+    container.querySelectorAll('.question-card').forEach(bindEvents);
+
+    if (addBtn && template) {
+      addBtn.addEventListener('click', () => {
+        const clone = template.content.cloneNode(true);
+        const newCard = clone.querySelector('.question-card');
+        bindEvents(newCard);
+        container.appendChild(clone);
+        updateQuestionNumbers();
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+      });
+    }
+  });
+</script>
+{% endblock %}

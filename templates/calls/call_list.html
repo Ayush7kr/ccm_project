@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+
+{% block title %}Call History Logs — CCM{% endblock %}
+{% block page_title %}Call History Logs{% endblock %}
+
+{% block content %}
+<div class="card" style="margin-bottom: 1.5rem;">
+  <div class="card-header" style="flex-wrap: wrap; gap: 1rem;">
+    <div>
+      <h3 class="card-title">Recorded Calls History</h3>
+      <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">Comprehensive log of recorded customer calling interactions</p>
+    </div>
+  </div>
+
+  <!-- Search and Multi-criteria Filters -->
+  <form method="GET" action="{% url 'call_list' %}" style="display: flex; gap: 0.75rem; margin-bottom: 1.25rem; flex-wrap: wrap; align-items: center;">
+    <div style="flex: 1; min-width: 200px;">
+      <input type="text" name="q" value="{{ search_query }}" placeholder="Search customer, phone, company, or notes..." class="form-control">
+    </div>
+
+    <div style="width: 180px;">
+      <select name="campaign" class="form-select">
+        <option value="">All Campaigns</option>
+        {% for camp in campaigns %}
+          <option value="{{ camp.id }}" {% if campaign_id == camp.id|stringformat:"s" %}selected{% endif %}>
+            {{ camp.name }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    {% if user.is_admin_user %}
+      <div style="width: 170px;">
+        <select name="telecaller" class="form-select">
+          <option value="">All Tele-callers</option>
+          {% for tc in telecallers %}
+            <option value="{{ tc.id }}" {% if telecaller_id == tc.id|stringformat:"s" %}selected{% endif %}>
+              {{ tc.get_full_name|default:tc.username }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+    {% endif %}
+
+    <div style="width: 180px;">
+      <select name="status" class="form-select">
+        <option value="">All Call Outcomes</option>
+        <option value="Completed" {% if status_filter == 'Completed' %}selected{% endif %}>Completed</option>
+        <option value="No Answer" {% if status_filter == 'No Answer' %}selected{% endif %}>No Answer</option>
+        <option value="Unreachable" {% if status_filter == 'Unreachable' %}selected{% endif %}>Unreachable</option>
+        <option value="Busy" {% if status_filter == 'Busy' %}selected{% endif %}>Busy</option>
+        <option value="Follow-up Required" {% if status_filter == 'Follow-up Required' %}selected{% endif %}>Follow-up Required</option>
+      </select>
+    </div>
+
+    <button type="submit" class="btn btn-secondary">
+      <i data-lucide="filter"></i> Filter
+    </button>
+
+    {% if search_query or campaign_id or telecaller_id or status_filter %}
+      <a href="{% url 'call_list' %}" class="btn btn-outline">Clear</a>
+    {% endif %}
+  </form>
+
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Customer</th>
+          <th>Campaign</th>
+          <th>Tele-caller</th>
+          <th>Outcome Status</th>
+          <th>Duration</th>
+          <th>Date & Time</th>
+          <th>Call Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for call in calls %}
+        <tr>
+          <td>
+            <a href="{% url 'customer_detail' call.customer.pk %}" style="font-weight: 700; text-decoration: none; color: var(--text-main);">
+              {{ call.customer.name }}
+            </a>
+            <div style="font-size: 0.75rem; color: var(--text-muted);">
+              {{ call.customer.phone }}{% if call.customer.company %} &bull; {{ call.customer.company }}{% endif %}
+            </div>
+          </td>
+          <td>
+            <a href="{% url 'campaign_detail' call.campaign.pk %}" style="font-size: 0.85rem; font-weight: 600; text-decoration: none; color: var(--text-main);">
+              {{ call.campaign.name }}
+            </a>
+          </td>
+          <td>
+            <span style="font-size: 0.85rem;">{{ call.telecaller.get_full_name|default:call.telecaller.username }}</span>
+          </td>
+          <td>
+            <span class="badge {% if call.call_status == 'Completed' %}badge-success{% elif call.call_status == 'Follow-up Required' %}badge-warning{% elif call.call_status == 'No Answer' %}badge-warning{% else %}badge-info{% endif %}">
+              {{ call.call_status }}
+            </span>
+          </td>
+          <td><strong>{{ call.duration }}s</strong></td>
+          <td style="font-size: 0.8rem; color: var(--text-muted); white-space: nowrap;">
+            {{ call.created_at|date:"M d, Y H:i" }}
+          </td>
+          <td style="font-size: 0.85rem; max-width: 250px;">
+            {{ call.comments|default:"No notes entered."|truncatewords:10 }}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7">
+            <div class="empty-state" style="padding: 2.5rem 1rem;">
+              <div class="empty-state-icon"><i data-lucide="phone-off"></i></div>
+              <h4 class="empty-state-title">No Call Logs Found</h4>
+              <p class="empty-state-desc">No calls recorded matching your search or filter criteria.</p>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

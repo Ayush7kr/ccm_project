@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+
+{% block title %}Tele-callers Roster — CCM{% endblock %}
+{% block page_title %}Tele-callers Roster{% endblock %}
+
+{% block content %}
+<div class="card" style="margin-bottom: 1.5rem;">
+  <div class="card-header" style="flex-wrap: wrap; gap: 1rem;">
+    <div>
+      <h3 class="card-title">All Tele-callers</h3>
+      <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">Manage system call agents, view workload, and monitor performance</p>
+    </div>
+    <a href="{% url 'telecaller_create' %}" class="btn btn-primary">
+      <i data-lucide="user-plus"></i> Add Tele-caller
+    </a>
+  </div>
+
+  <!-- Filter & Search Bar -->
+  <form method="GET" action="{% url 'telecaller_list' %}" style="display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.25rem;">
+    <div style="flex: 1; min-width: 220px;">
+      <input type="text" name="q" value="{{ search_query }}" class="form-control" placeholder="Search by name, email, phone...">
+    </div>
+    <div style="width: 160px;">
+      <select name="status" class="form-select">
+        <option value="">All Statuses</option>
+        <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active Only</option>
+        <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive Only</option>
+      </select>
+    </div>
+    <button type="submit" class="btn btn-secondary">
+      <i data-lucide="filter"></i> Filter
+    </button>
+  </form>
+
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Tele-caller</th>
+          <th>Contact</th>
+          <th>Status</th>
+          <th>Assigned</th>
+          <th>Completed</th>
+          <th>Pending</th>
+          <th>Completion %</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in telecallers %}
+        <tr>
+          <td>
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+              <div class="avatar" style="width: 32px; height: 32px; font-size: 0.8rem;">{{ item.user.username|slice:":1" }}</div>
+              <div>
+                <a href="{% url 'telecaller_detail' item.user.pk %}" style="font-weight: 600; color: var(--text-main);">
+                  {{ item.user.get_full_name|default:item.user.username }}
+                </a>
+                <div style="font-size: 0.75rem; color: var(--text-muted);">@{{ item.user.username }}</div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <div style="font-size: 0.85rem;">{{ item.user.email|default:"No email" }}</div>
+            <div style="font-size: 0.75rem; color: var(--text-muted);">{{ item.user.phone|default:"No phone" }}</div>
+          </td>
+          <td>
+            {% if item.user.is_active %}
+              <span class="badge badge-success">Active</span>
+            {% else %}
+              <span class="badge badge-secondary">Inactive</span>
+            {% endif %}
+          </td>
+          <td><strong>{{ item.assigned_count }}</strong></td>
+          <td><span style="color: var(--success); font-weight: 600;">{{ item.completed_calls }}</span></td>
+          <td><span style="color: var(--warning); font-weight: 600;">{{ item.pending_calls }}</span></td>
+          <td>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <div style="flex: 1; height: 6px; background-color: var(--divider-color); border-radius: 3px; min-width: 50px; overflow: hidden;">
+                <div style="width: {{ item.completion_rate }}%; height: 100%; background-color: var(--primary);"></div>
+              </div>
+              <span style="font-size: 0.8rem; font-weight: 600;">{{ item.completion_rate }}%</span>
+            </div>
+          </td>
+          <td>
+            <div style="display: flex; gap: 0.5rem;">
+              <a href="{% url 'telecaller_detail' item.user.pk %}" class="btn btn-outline btn-sm" title="View Profile">
+                <i data-lucide="eye"></i>
+              </a>
+              <a href="{% url 'telecaller_edit' item.user.pk %}" class="btn btn-outline btn-sm" title="Edit">
+                <i data-lucide="edit-3"></i>
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="8">
+            <div class="empty-state">
+              <div class="empty-state-icon">
+                <i data-lucide="user-x"></i>
+              </div>
+              <h4 class="empty-state-title">No Tele-callers Found</h4>
+              <p class="empty-state-desc">No tele-callers match your query or none have been added yet.</p>
+              <a href="{% url 'telecaller_create' %}" class="btn btn-primary">
+                <i data-lucide="user-plus"></i> Add Tele-caller
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block title %}403 Access Forbidden — CCM{% endblock %}
+
+{% block content %}
+<div class="card empty-state" style="margin-top: 3rem;">
+  <div class="empty-state-icon" style="background-color: var(--warning-light); color: var(--warning);">
+    <i data-lucide="shield-alert" style="width: 32px; height: 32px;"></i>
+  </div>
+  <h2 class="empty-state-title" style="font-size: 1.5rem;">Access Forbidden (403)</h2>
+  <p class="empty-state-desc">You do not have permission to view this resource. Contact an administrator if you believe this is an error.</p>
+  <a href="{% url 'dashboard' %}" class="btn btn-primary">
+    <i data-lucide="arrow-left"></i> Return to Dashboard
+  </a>
+</div>
+{% endblock %}

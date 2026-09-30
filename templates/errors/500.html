@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block title %}500 Server Error — CCM{% endblock %}
+
+{% block content %}
+<div class="card empty-state" style="margin-top: 3rem;">
+  <div class="empty-state-icon" style="background-color: var(--danger-light); color: var(--danger);">
+    <i data-lucide="server-off" style="width: 32px; height: 32px;"></i>
+  </div>
+  <h2 class="empty-state-title" style="font-size: 1.5rem;">Internal Server Error (500)</h2>
+  <p class="empty-state-desc">An unexpected error occurred while processing your request. Please try again later.</p>
+  <a href="{% url 'dashboard' %}" class="btn btn-primary">
+    <i data-lucide="arrow-left"></i> Return to Dashboard
+  </a>
+</div>
+{% endblock %}

@@ -1,0 +1,582 @@
+{% extends 'base.html' %}
+
+{% block title %}Analytics Dashboard — CCM{% endblock %}
+{% block page_title %}Analytics & Insights{% endblock %}
+
+{% block content %}
+<!-- Global Filters Bar -->
+<div class="card" style="margin-bottom: 1.5rem;">
+  <form method="GET" action="{% url 'analytics' %}" id="analyticsFilterForm">
+    <div style="display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap;">
+      <!-- Campaign Filter -->
+      <div style="flex: 1; min-width: 200px;">
+        <label style="font-size: 0.8rem; font-weight: 600; margin-bottom: 0.25rem; display: block; color: var(--text-muted);">Campaign</label>
+        <select name="campaign" id="campaignSelect" class="form-select">
+          <option value="">All Campaigns</option>
+          {% for c in campaigns %}
+            <option value="{{ c.id }}" {% if selected_campaign == c.id|stringformat:"i" %}selected{% endif %}>{{ c.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Date Range Preset -->
+      <div style="min-width: 160px;">
+        <label style="font-size: 0.8rem; font-weight: 600; margin-bottom: 0.25rem; display: block; color: var(--text-muted);">Date Range</label>
+        <select name="date_range" id="dateRangeSelect" class="form-select">
+          <option value="" {% if not date_range %}selected{% endif %}>All Time</option>
+          <option value="today" {% if date_range == 'today' %}selected{% endif %}>Today</option>
+          <option value="7days" {% if date_range == '7days' %}selected{% endif %}>Last 7 Days</option>
+          <option value="30days" {% if date_range == '30days' %}selected{% endif %}>Last 30 Days</option>
+          <option value="this_month" {% if date_range == 'this_month' %}selected{% endif %}>This Month</option>
+          <option value="last_month" {% if date_range == 'last_month' %}selected{% endif %}>Last Month</option>
+          <option value="custom" {% if date_range == 'custom' %}selected{% endif %}>Custom Range</option>
+        </select>
+      </div>
+
+      <!-- Custom Date Range (hidden by default) -->
+      <div id="customDateFields" style="display: {% if date_range == 'custom' %}flex{% else %}none{% endif %}; gap: 0.5rem; align-items: flex-end;">
+        <div>
+          <label style="font-size: 0.8rem; font-weight: 600; margin-bottom: 0.25rem; display: block; color: var(--text-muted);">From</label>
+          <input type="date" name="date_from" value="{{ date_from }}" class="form-control" style="width: 150px;">
+        </div>
+        <div>
+          <label style="font-size: 0.8rem; font-weight: 600; margin-bottom: 0.25rem; display: block; color: var(--text-muted);">To</label>
+          <input type="date" name="date_to" value="{{ date_to }}" class="form-control" style="width: 150px;">
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 0.5rem;">
+        <button type="submit" class="btn btn-primary">
+          <i data-lucide="filter"></i> Apply
+        </button>
+        {% if has_filters %}
+        <a href="{% url 'analytics' %}" class="btn btn-secondary">
+          <i data-lucide="x"></i> Clear
+        </a>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if has_filters %}
+    <div style="margin-top: 0.75rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+      <span style="font-size: 0.8rem; color: var(--text-muted);">Active Filters:</span>
+      {% if selected_campaign_obj %}
+        <span class="badge badge-info">{{ selected_campaign_obj.name }}</span>
+      {% endif %}
+      <span class="badge badge-secondary">{{ date_display }}</span>
+    </div>
+    {% endif %}
+  </form>
+</div>
+
+<!-- KPI Metrics Grid -->
+<div class="kpi-grid-4">
+  <div class="stat-card">
+    <div class="stat-info">
+      <div class="stat-value">{{ kpis.total_calls }}</div>
+      <div class="stat-label">Total Calls</div>
+    </div>
+    <div class="stat-icon blue"><i data-lucide="phone"></i></div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-info">
+      <div class="stat-value" style="color: var(--success);">{{ kpis.completed_calls }}</div>
+      <div class="stat-label">Completed</div>
+    </div>
+    <div class="stat-icon green"><i data-lucide="check-circle"></i></div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-info">
+      <div class="stat-value" style="color: var(--primary);">{{ kpis.completion_rate }}%</div>
+      <div class="stat-label">Completion Rate</div>
+    </div>
+    <div class="stat-icon blue"><i data-lucide="target"></i></div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-info">
+      <div class="stat-value">{{ kpis.avg_duration_fmt }}</div>
+      <div class="stat-label">Avg Call Duration</div>
+    </div>
+    <div class="stat-icon cyan"><i data-lucide="clock"></i></div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-info">
+      <div class="stat-value">{{ kpis.customers_contacted }}</div>
+      <div class="stat-label">Customers Contacted</div>
+    </div>
+    <div class="stat-icon green"><i data-lucide="users"></i></div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-info">
+      <div class="stat-value" style="color: var(--warning);">{{ kpis.followups }}</div>
+      <div class="stat-label">Follow-ups</div>
+    </div>
+    <div class="stat-icon yellow"><i data-lucide="calendar"></i></div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-info">
+      <div class="stat-value" style="color: var(--success);">{{ kpis.positive_responses }}</div>
+      <div class="stat-label">Positive Ratings (4+)</div>
+    </div>
+    <div class="stat-icon green"><i data-lucide="thumbs-up"></i></div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-info">
+      <div class="stat-value">{{ outcome_total }}</div>
+      <div class="stat-label">Total Outcomes</div>
+    </div>
+    <div class="stat-icon blue"><i data-lucide="bar-chart-2"></i></div>
+  </div>
+</div>
+
+<!-- Charts Row: Donut + Activity Trend -->
+<div class="responsive-grid-1-1_5" style="margin-bottom: 1.5rem;">
+  <!-- Call Outcomes Donut -->
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Call Outcomes</h3>
+    </div>
+    {% if outcome_total > 0 %}
+    <div style="height: 280px; position: relative;">
+      <canvas id="outcomesDonutChart"></canvas>
+    </div>
+    <div class="responsive-grid-1-1" style="gap: 0.5rem; margin-top: 1rem;">
+      {% for status, data in outcome_counts.items %}
+      <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem;">
+        <span style="width: 10px; height: 10px; border-radius: 50%; background-color: {% if status == 'Completed' %}#10b981{% elif status == 'No Answer' %}#f59e0b{% elif status == 'Unreachable' %}#ef4444{% elif status == 'Busy' %}#64748b{% else %}#2563eb{% endif %};"></span>
+        <span style="color: var(--text-muted);">{{ status }}</span>
+        <span style="font-weight: 600; margin-left: auto;">{{ data.count }}</span>
+        <span style="color: var(--text-subtle); font-size: 0.75rem;">({{ data.pct }}%)</span>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state" style="padding: 2rem;">
+      <div class="empty-state-icon"><i data-lucide="pie-chart" style="width: 28px; height: 28px;"></i></div>
+      <div class="empty-state-title">No Call Data</div>
+      <div class="empty-state-desc">No calls recorded for the selected filters.</div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Call Activity Over Time -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h3 class="card-title">Call Activity Trend</h3>
+        <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">Daily call volume and completions</p>
+      </div>
+    </div>
+    <div style="height: 300px; position: relative;">
+      <canvas id="activityTrendChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Campaign Performance Tracker -->
+{% if campaign_perf %}
+<div class="card" style="margin-bottom: 1.5rem;">
+  <div class="card-header">
+    <div>
+      <h3 class="card-title">Campaign Performance</h3>
+      <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">Progress toward call targets</p>
+    </div>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem;">
+    {% for cp in campaign_perf %}
+    <div style="padding: 1rem; border: 1px solid var(--border-color); border-radius: var(--radius-sm); background-color: var(--bg-primary);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+        <div>
+          <div style="font-weight: 600; font-size: 0.9rem;">{{ cp.campaign.name }}</div>
+          <div style="font-size: 0.75rem; color: var(--text-muted);">
+            <span class="badge {% if cp.campaign.status == 'Active' %}badge-success{% elif cp.campaign.status == 'Paused' %}badge-warning{% else %}badge-info{% endif %}" style="font-size: 0.7rem;">{{ cp.campaign.status }}</span>
+          </div>
+        </div>
+        <div style="text-align: right;">
+          <div style="font-size: 1.3rem; font-weight: 700; color: {% if cp.completion_pct >= 80 %}var(--success){% elif cp.completion_pct >= 50 %}var(--warning){% else %}var(--text-main){% endif %};">{{ cp.completion_pct }}%</div>
+        </div>
+      </div>
+      <div class="campaign-progress-bar-wrap">
+        <div class="campaign-progress-bar-fill" style="width: {{ cp.completion_pct }}%;"></div>
+      </div>
+      <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); margin-top: 0.35rem;">
+        <span>{{ cp.completed }} completed</span>
+        <span>{{ cp.pending }} remaining</span>
+        <span>Target: {{ cp.target }}</span>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- Telecaller Performance Table -->
+{% if tc_perf %}
+<div class="card" style="margin-bottom: 1.5rem;">
+  <div class="card-header">
+    <div>
+      <h3 class="card-title">Tele-caller Performance</h3>
+      <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">Individual agent metrics</p>
+    </div>
+  </div>
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Agent</th>
+          <th>Assigned</th>
+          <th>Calls Made</th>
+          <th>Completed</th>
+          <th>Rate</th>
+          <th>Avg Duration</th>
+          <th>Pending</th>
+          <th>Follow-ups</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in tc_perf %}
+        <tr>
+          <td>
+            <div style="font-weight: 600;">{{ row.telecaller.get_full_name|default:row.telecaller.username }}</div>
+            <div style="font-size: 0.75rem; color: var(--text-muted);">@{{ row.telecaller.username }}</div>
+          </td>
+          <td>{{ row.assigned_customers }}</td>
+          <td>{{ row.total_calls }}</td>
+          <td style="font-weight: 600; color: var(--success);">{{ row.completed }}</td>
+          <td>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <div style="flex: 1; max-width: 60px; background-color: var(--divider-color); height: 6px; border-radius: 3px; overflow: hidden;">
+                <div style="height: 100%; background: {% if row.completion_rate >= 75 %}var(--success){% elif row.completion_rate >= 50 %}var(--warning){% else %}var(--danger){% endif %}; width: {% if row.completion_rate > 100 %}100{% else %}{{ row.completion_rate }}{% endif %}%; border-radius: 3px;"></div>
+              </div>
+              <span style="font-size: 0.8rem; font-weight: 600;">{{ row.completion_rate }}%</span>
+            </div>
+          </td>
+          <td>{{ row.avg_duration }}</td>
+          <td>
+            {% if row.pending > 0 %}
+            <span class="badge badge-warning">{{ row.pending }}</span>
+            {% else %}
+            <span style="color: var(--text-subtle);">0</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if row.followups > 0 %}
+            <span class="badge badge-info">{{ row.followups }}</span>
+            {% else %}
+            <span style="color: var(--text-subtle);">0</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- Customer Response Insights -->
+{% if response_insights %}
+<div class="card" style="margin-bottom: 1.5rem;">
+  <div class="card-header">
+    <div>
+      <h3 class="card-title">Customer Response Insights</h3>
+      <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">Aggregated patterns from questionnaire responses</p>
+    </div>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem;">
+    {% for insight in response_insights %}
+    <div style="padding: 1rem; border: 1px solid var(--border-color); border-radius: var(--radius-sm); background-color: var(--bg-primary);">
+      <div style="display: flex; align-items: flex-start; gap: 0.75rem;">
+        <div class="stat-icon blue" style="width: 40px; height: 40px; flex-shrink: 0;">
+          <i data-lucide="{{ insight.icon }}" style="width: 18px; height: 18px;"></i>
+        </div>
+        <div>
+          <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">{{ insight.label }}</div>
+          <div style="font-size: 1.2rem; font-weight: 700; color: var(--text-main); margin: 0.15rem 0;">{{ insight.value }}</div>
+          <div style="font-size: 0.8rem; color: var(--text-muted);">{{ insight.detail }}</div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- Questionnaire Response Analytics (Campaign-specific) -->
+{% if question_analytics %}
+<div class="card" style="margin-bottom: 1.5rem;">
+  <div class="card-header">
+    <div>
+      <h3 class="card-title">Questionnaire Response Analysis</h3>
+      <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">Response breakdown for {{ selected_campaign_obj.name }}</p>
+    </div>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+    {% for qa in question_analytics %}
+    <div style="padding: 1rem; border: 1px solid var(--border-color); border-radius: var(--radius-sm); background-color: var(--bg-primary);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+        <h4 style="font-size: 0.95rem; font-weight: 700;">Q{{ forloop.counter }}. {{ qa.question.question_text }}</h4>
+        <span class="badge badge-info">{{ qa.question.get_question_type_display }} ({{ qa.total_responses }} responses)</span>
+      </div>
+
+      {% if qa.question.question_type == 'single_choice' or qa.question.question_type == 'yes_no' or qa.question.question_type == 'multiple_choice' %}
+        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+          {% for opt, count in qa.counts.items %}
+            <div>
+              <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 2px;">
+                <span><strong>{{ opt }}</strong></span>
+                <span>{{ count }} responses {% if qa.percentages %}<span style="color: var(--text-subtle);">({{ qa.percentages|default_if_none:"" }})</span>{% endif %}</span>
+              </div>
+              <div style="background-color: var(--border-color); height: 8px; border-radius: 4px; overflow: hidden;">
+                <div style="background-color: var(--primary); height: 100%; width: {% if qa.total_responses > 0 %}{% widthratio count qa.total_responses 100 %}{% else %}0{% endif %}%; transition: width 0.3s ease;"></div>
+              </div>
+            </div>
+          {% empty %}
+            <div style="font-size: 0.85rem; color: var(--text-muted);">No response data recorded yet.</div>
+          {% endfor %}
+        </div>
+      {% elif qa.question.question_type == 'rating_scale' %}
+        <div style="display: flex; align-items: center; gap: 1.5rem; margin-bottom: 0.75rem;">
+          <div style="text-align: center; background-color: var(--bg-secondary); padding: 0.75rem 1.25rem; border-radius: 8px; border: 1px solid var(--border-color);">
+            <div style="font-size: 1.8rem; font-weight: 700; color: var(--warning);">{{ qa.avg_rating|default:"0.0" }} ★</div>
+            <div style="font-size: 0.75rem; color: var(--text-muted);">Average (1–5)</div>
+          </div>
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 0.35rem;">
+            {% for score, count in qa.counts.items %}
+              <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem;">
+                <span style="width: 50px;">{{ score }} ★</span>
+                <div style="flex: 1; background-color: var(--border-color); height: 8px; border-radius: 4px; overflow: hidden;">
+                  <div style="background-color: var(--warning); height: 100%; width: {% if qa.total_responses > 0 %}{% widthratio count qa.total_responses 100 %}{% else %}0{% endif %}%;"></div>
+                </div>
+                <span style="width: 30px; text-align: right;">{{ count }}</span>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      {% elif qa.question.question_type == 'open_ended' %}
+        <div style="display: flex; flex-direction: column; gap: 0.4rem;">
+          {% for txt in qa.text_responses %}
+            <div style="font-size: 0.85rem; padding: 0.5rem 0.75rem; background-color: var(--bg-secondary); border-radius: 4px; border-left: 3px solid var(--primary);">
+              "{{ txt }}"
+            </div>
+          {% empty %}
+            <div style="font-size: 0.85rem; color: var(--text-muted);">No open-ended feedback yet.</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% elif selected_campaign %}
+<div class="card" style="margin-bottom: 1.5rem; text-align: center; color: var(--text-muted); padding: 1.5rem;">
+  <i data-lucide="help-circle" style="width: 32px; height: 32px; margin-bottom: 0.5rem;"></i>
+  <div>No questionnaire is attached to this selected campaign yet.</div>
+</div>
+{% endif %}
+
+<!-- Follow-up Analytics -->
+{% if fu_analytics.total > 0 %}
+<div class="card" style="margin-bottom: 1.5rem;">
+  <div class="card-header">
+    <div>
+      <h3 class="card-title">Follow-up Analytics</h3>
+      <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">Status breakdown of scheduled follow-ups</p>
+    </div>
+  </div>
+
+  <!-- Follow-up Status KPIs -->
+  <div class="responsive-grid-4" style="margin-bottom: 1.25rem;">
+    <div style="text-align: center; padding: 0.75rem; background: var(--bg-primary); border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+      <div style="font-size: 1.5rem; font-weight: 700;">{{ fu_analytics.total }}</div>
+      <div style="font-size: 0.75rem; color: var(--text-muted);">Total</div>
+    </div>
+    <div style="text-align: center; padding: 0.75rem; background: var(--warning-light); border-radius: var(--radius-sm); border: 1px solid rgba(245, 158, 11, 0.2);">
+      <div style="font-size: 1.5rem; font-weight: 700; color: var(--warning);">{{ fu_analytics.pending }}</div>
+      <div style="font-size: 0.75rem; color: var(--text-muted);">Pending</div>
+    </div>
+    <div style="text-align: center; padding: 0.75rem; background: var(--danger-light); border-radius: var(--radius-sm); border: 1px solid rgba(239, 68, 68, 0.2);">
+      <div style="font-size: 1.5rem; font-weight: 700; color: var(--danger);">{{ fu_analytics.overdue }}</div>
+      <div style="font-size: 0.75rem; color: var(--text-muted);">Overdue</div>
+    </div>
+    <div style="text-align: center; padding: 0.75rem; background: var(--success-light); border-radius: var(--radius-sm); border: 1px solid rgba(16, 185, 129, 0.2);">
+      <div style="font-size: 1.5rem; font-weight: 700; color: var(--success);">{{ fu_analytics.completed }}</div>
+      <div style="font-size: 0.75rem; color: var(--text-muted);">Completed</div>
+    </div>
+  </div>
+
+  <!-- Follow-up by Telecaller -->
+  {% if fu_analytics.by_telecaller %}
+  <div style="margin-top: 0.5rem;">
+    <h4 style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em;">By Tele-caller</h4>
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr><th>Agent</th><th>Total</th><th>Pending</th><th>Overdue</th><th>Completed</th></tr>
+        </thead>
+        <tbody>
+          {% for row in fu_analytics.by_telecaller %}
+          <tr>
+            <td style="font-weight: 600;">{{ row.telecaller.get_full_name|default:row.telecaller.username }}</td>
+            <td>{{ row.total }}</td>
+            <td>{% if row.pending > 0 %}<span class="badge badge-warning">{{ row.pending }}</span>{% else %}0{% endif %}</td>
+            <td>{% if row.overdue > 0 %}<span class="badge badge-danger">{{ row.overdue }}</span>{% else %}0{% endif %}</td>
+            <td>{% if row.completed > 0 %}<span class="badge badge-success">{{ row.completed }}</span>{% else %}0{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
+<!-- Quick Links to Reports -->
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title">Export & Reports</h3>
+    <a href="{% url 'reports' %}" class="btn btn-primary btn-sm">
+      <i data-lucide="file-text"></i> Open Report Center
+    </a>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.75rem;">
+    <a href="{% url 'export_pdf' %}?report_type=campaign{% if selected_campaign %}&campaign={{ selected_campaign }}{% endif %}" class="action-required-card" target="_blank">
+      <div>
+        <div style="font-weight: 600; font-size: 0.9rem;">Campaign Report</div>
+        <div style="font-size: 0.75rem; color: var(--text-muted);">PDF Export</div>
+      </div>
+      <i data-lucide="download" style="color: var(--danger); width: 18px;"></i>
+    </a>
+    <a href="{% url 'export_excel' %}?report_type=calls{% if selected_campaign %}&campaign={{ selected_campaign }}{% endif %}" class="action-required-card" target="_blank">
+      <div>
+        <div style="font-weight: 600; font-size: 0.9rem;">Call Activity</div>
+        <div style="font-size: 0.75rem; color: var(--text-muted);">Excel Export</div>
+      </div>
+      <i data-lucide="download" style="color: var(--success); width: 18px;"></i>
+    </a>
+    <a href="{% url 'export_excel' %}?report_type=telecaller" class="action-required-card" target="_blank">
+      <div>
+        <div style="font-weight: 600; font-size: 0.9rem;">Tele-caller Perf</div>
+        <div style="font-size: 0.75rem; color: var(--text-muted);">Excel Export</div>
+      </div>
+      <i data-lucide="download" style="color: var(--success); width: 18px;"></i>
+    </a>
+    <a href="{% url 'export_pdf' %}?report_type=followups{% if selected_campaign %}&campaign={{ selected_campaign }}{% endif %}" class="action-required-card" target="_blank">
+      <div>
+        <div style="font-weight: 600; font-size: 0.9rem;">Follow-up Report</div>
+        <div style="font-size: 0.75rem; color: var(--text-muted);">PDF Export</div>
+      </div>
+      <i data-lucide="download" style="color: var(--danger); width: 18px;"></i>
+    </a>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    // Toggle custom date fields
+    const dateRangeSelect = document.getElementById('dateRangeSelect');
+    const customDateFields = document.getElementById('customDateFields');
+    if (dateRangeSelect) {
+      dateRangeSelect.addEventListener('change', () => {
+        customDateFields.style.display = dateRangeSelect.value === 'custom' ? 'flex' : 'none';
+      });
+    }
+
+    // Outcomes Donut Chart
+    const outcomesCanvas = document.getElementById('outcomesDonutChart');
+    if (outcomesCanvas) {
+      const ctxOutcomes = outcomesCanvas.getContext('2d');
+      new Chart(ctxOutcomes, {
+        type: 'doughnut',
+        data: {
+          labels: ['Completed', 'No Answer', 'Unreachable', 'Busy', 'Follow-up Required'],
+          datasets: [{
+            data: [
+              {% for status, data in outcome_counts.items %}{{ data.count }}{% if not forloop.last %}, {% endif %}{% endfor %}
+            ],
+            backgroundColor: ['#10b981', '#f59e0b', '#ef4444', '#64748b', '#2563eb'],
+            borderWidth: 0,
+            hoverOffset: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '65%',
+          plugins: {
+            legend: { display: false }
+          }
+        }
+      });
+    }
+
+    // Activity Trend Chart
+    const activityCanvas = document.getElementById('activityTrendChart');
+    if (activityCanvas) {
+      const ctxActivity = activityCanvas.getContext('2d');
+      new Chart(ctxActivity, {
+        type: 'line',
+        data: {
+          labels: {{ activity_labels|safe }},
+          datasets: [
+            {
+              label: 'Total Calls',
+              data: {{ activity_total|safe }},
+              borderColor: '#2563eb',
+              backgroundColor: 'rgba(37, 99, 235, 0.08)',
+              fill: true,
+              tension: 0.4,
+              pointRadius: 3,
+              pointHoverRadius: 5,
+              borderWidth: 2
+            },
+            {
+              label: 'Completed',
+              data: {{ activity_completed|safe }},
+              borderColor: '#10b981',
+              backgroundColor: 'rgba(16, 185, 129, 0.08)',
+              fill: true,
+              tension: 0.4,
+              pointRadius: 3,
+              pointHoverRadius: 5,
+              borderWidth: 2
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { precision: 0 },
+              grid: { color: 'rgba(0,0,0,0.04)' }
+            },
+            x: {
+              grid: { display: false },
+              ticks: { maxTicksLimit: 12, font: { size: 11 } }
+            }
+          },
+          plugins: {
+            legend: {
+              position: 'top',
+              labels: { usePointStyle: true, padding: 15, font: { size: 12 } }
+            }
+          }
+        }
+      });
+    }
+  });
+</script>
+{% endblock %}

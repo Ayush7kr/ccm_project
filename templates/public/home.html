@@ -1,0 +1,1100 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CCM — Campaign Call Manager | Centralized Tele-calling & Campaign Operations</title>
+  
+  <!-- CSS Design System -->
+  <link rel="stylesheet" href="{% static 'css/main.css' %}">
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    /* Public Landing Page Custom Styles */
+    .landing-body {
+      background-color: var(--bg-primary);
+      color: var(--text-main);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+    }
+
+    .landing-navbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.25rem 2.5rem;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border-color);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+
+    .landing-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: var(--text-main);
+      font-weight: 700;
+      font-size: 1.25rem;
+    }
+
+    .landing-brand-badge {
+      width: 38px;
+      height: 38px;
+      border-radius: var(--radius-md);
+      background: linear-gradient(135deg, var(--primary), #1d4ed8);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 1.1rem;
+      letter-spacing: -0.5px;
+    }
+
+    .landing-nav-links {
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    .landing-nav-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.95rem;
+      font-weight: 500;
+      transition: color var(--transition-fast);
+    }
+
+    .landing-nav-links a:hover {
+      color: var(--primary);
+    }
+
+    .landing-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+    }
+
+    /* Hero Section */
+    .hero-section {
+      padding: 5.5rem 1.5rem 4rem;
+      text-align: center;
+      position: relative;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.4rem 1rem;
+      background: var(--primary-light);
+      color: var(--primary);
+      border-radius: 9999px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+      border: 1px solid rgba(37, 99, 235, 0.2);
+    }
+
+    .hero-title {
+      font-size: 3.25rem;
+      font-weight: 800;
+      line-height: 1.2;
+      color: var(--text-main);
+      margin: 0 auto 1.25rem;
+      max-width: 900px;
+      letter-spacing: -1px;
+    }
+
+    .hero-title span {
+      background: linear-gradient(135deg, var(--primary), #6366f1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-subtitle {
+      font-size: 1.15rem;
+      color: var(--text-muted);
+      max-width: 720px;
+      margin: 0 auto 2.5rem;
+      line-height: 1.6;
+    }
+
+    .hero-actions {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 3.5rem;
+      flex-wrap: wrap;
+    }
+
+    .hero-stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1.5rem;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    .hero-stat-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      padding: 1.5rem;
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+      text-align: center;
+    }
+
+    .hero-stat-num {
+      font-size: 1.75rem;
+      font-weight: 800;
+      color: var(--primary);
+      margin-bottom: 0.25rem;
+    }
+
+    .hero-stat-lbl {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    /* Section Header */
+    .section-title-wrap {
+      text-align: center;
+      margin-bottom: 3.5rem;
+    }
+
+    .section-tag {
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--primary);
+      margin-bottom: 0.5rem;
+      display: inline-block;
+    }
+
+    .section-heading {
+      font-size: 2.25rem;
+      font-weight: 800;
+      color: var(--text-main);
+      margin: 0 0 0.75rem;
+      letter-spacing: -0.5px;
+    }
+
+    .section-desc {
+      font-size: 1.05rem;
+      color: var(--text-muted);
+      max-width: 650px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    /* Feature Cards */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.75rem;
+      margin-bottom: 5rem;
+    }
+
+    .feature-box {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 2rem;
+      box-shadow: var(--shadow-sm);
+      transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .feature-box:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-md);
+      border-color: rgba(37, 99, 235, 0.3);
+    }
+
+    .feature-icon-wrapper {
+      width: 52px;
+      height: 52px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1.25rem;
+    }
+
+    .feature-icon-blue { background: var(--primary-light); color: var(--primary); }
+    .feature-icon-green { background: var(--success-light); color: var(--success); }
+    .feature-icon-yellow { background: var(--warning-light); color: var(--warning); }
+    .feature-icon-indigo { background: #eef2ff; color: #6366f1; }
+    .feature-icon-purple { background: #f3e8ff; color: #9333ea; }
+    .feature-icon-cyan { background: var(--info-light); color: var(--info); }
+
+    .feature-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin: 0 0 0.75rem;
+    }
+
+    .feature-text {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 1rem;
+      flex-grow: 1;
+    }
+
+    .feature-points {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      border-top: 1px solid var(--divider-color);
+      padding-top: 1rem;
+    }
+
+    .feature-points li {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 0.4rem;
+    }
+
+    .feature-points li i {
+      width: 14px;
+      height: 14px;
+      color: var(--success);
+      flex-shrink: 0;
+    }
+
+    /* Role Based Section */
+    .roles-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      margin-bottom: 5rem;
+    }
+
+    .role-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 2.25rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .role-card.admin-card {
+      border-top: 4px solid var(--primary);
+    }
+
+    .role-card.telecaller-card {
+      border-top: 4px solid var(--success);
+    }
+
+    .role-badge {
+      display: inline-block;
+      padding: 0.3rem 0.85rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 1rem;
+    }
+
+    .role-badge-admin {
+      background: var(--primary-light);
+      color: var(--primary);
+    }
+
+    .role-badge-telecaller {
+      background: var(--success-light);
+      color: var(--success);
+    }
+
+    .role-title {
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin: 0 0 0.5rem;
+    }
+
+    .role-desc {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+      line-height: 1.6;
+    }
+
+    .role-checklist {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .role-checklist li {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      font-size: 0.9rem;
+      color: var(--text-main);
+      margin-bottom: 0.75rem;
+    }
+
+    .role-checklist li i {
+      width: 18px;
+      height: 18px;
+      margin-top: 2px;
+      flex-shrink: 0;
+    }
+
+    /* Analytics Highlights */
+    .analytics-preview-wrap {
+      background: #0f172a;
+      border-radius: var(--radius-lg);
+      padding: 3.5rem 2.5rem;
+      color: #fff;
+      margin-bottom: 5rem;
+      box-shadow: var(--shadow-lg);
+    }
+
+    .analytics-preview-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3rem;
+      align-items: center;
+    }
+
+    .analytics-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.35rem 0.9rem;
+      background: rgba(37, 99, 235, 0.25);
+      color: #60a5fa;
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+    }
+
+    .analytics-preview-title {
+      font-size: 2rem;
+      font-weight: 800;
+      line-height: 1.3;
+      margin: 0 0 1rem;
+    }
+
+    .analytics-preview-desc {
+      font-size: 0.95rem;
+      color: #94a3b8;
+      line-height: 1.6;
+      margin-bottom: 2rem;
+    }
+
+    .metric-pill-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .metric-pill-box {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 1.25rem;
+      border-radius: var(--radius-md);
+    }
+
+    .metric-pill-val {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #38bdf8;
+      margin-bottom: 0.25rem;
+    }
+
+    .metric-pill-lbl {
+      font-size: 0.8rem;
+      color: #94a3b8;
+    }
+
+    /* Final CTA */
+    .cta-banner {
+      background: linear-gradient(135deg, var(--primary), #1d4ed8);
+      border-radius: var(--radius-lg);
+      padding: 4rem 2rem;
+      text-align: center;
+      color: #ffffff;
+      margin-bottom: 5rem;
+      box-shadow: var(--shadow-lg);
+    }
+
+    .cta-title {
+      font-size: 2.25rem;
+      font-weight: 800;
+      margin: 0 0 1rem;
+      letter-spacing: -0.5px;
+    }
+
+    .cta-desc {
+      font-size: 1.1rem;
+      color: rgba(255, 255, 255, 0.9);
+      max-width: 600px;
+      margin: 0 auto 2rem;
+      line-height: 1.6;
+    }
+
+    /* Landing Footer */
+    .landing-footer {
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border-color);
+      padding: 3.5rem 1.5rem 2rem;
+    }
+
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 2.5rem;
+      max-width: 1200px;
+      margin: 0 auto 2.5rem;
+    }
+
+    .footer-col-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .footer-links {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .footer-links li {
+      margin-bottom: 0.6rem;
+    }
+
+    .footer-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: color var(--transition-fast);
+    }
+
+    .footer-links a:hover {
+      color: var(--primary);
+    }
+
+    .footer-bottom {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--divider-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    /* Mobile Responsive */
+    @media (max-width: 992px) {
+      .hero-title { font-size: 2.5rem; }
+      .features-grid { grid-template-columns: repeat(2, 1fr); }
+      .hero-stats-row { grid-template-columns: repeat(2, 1fr); }
+      .analytics-preview-grid { grid-template-columns: 1fr; gap: 2rem; }
+      .footer-grid { grid-template-columns: 1fr 1fr; }
+    }
+
+    .landing-mobile-menu-btn {
+      display: none;
+      background: none;
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      cursor: pointer;
+      padding: 0.45rem 0.65rem;
+      border-radius: var(--radius-sm);
+    }
+
+    @media (max-width: 768px) {
+      .landing-navbar { padding: 0.85rem 1.25rem; }
+      .landing-mobile-menu-btn { display: inline-flex; align-items: center; justify-content: center; }
+      .landing-nav-links {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: #ffffff;
+        border-bottom: 1px solid var(--border-color);
+        box-shadow: var(--shadow-md);
+        flex-direction: column;
+        padding: 1rem 1.5rem;
+        gap: 0.85rem;
+        z-index: 999;
+      }
+      .landing-nav-links.open { display: flex; }
+      .hero-section { padding: 3.5rem 1rem 2.5rem; }
+      .hero-title { font-size: 2rem; }
+      .hero-subtitle { font-size: 1rem; }
+      .features-grid { grid-template-columns: 1fr; }
+      .roles-grid { grid-template-columns: 1fr; }
+      .hero-stats-row { grid-template-columns: 1fr; }
+      .metric-pill-grid { grid-template-columns: 1fr; }
+      .footer-grid { grid-template-columns: 1fr; }
+      .footer-bottom { flex-direction: column; gap: 0.75rem; text-align: center; }
+      .steps-grid { grid-template-columns: 1fr !important; }
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    /* Dark Theme Landing Overrides */
+    [data-theme="dark"] .landing-navbar {
+      background: rgba(17, 24, 39, 0.95);
+      border-bottom-color: var(--border-color);
+    }
+    [data-theme="dark"] .landing-nav-links {
+      background: var(--bg-secondary);
+    }
+    [data-theme="dark"] .feature-box,
+    [data-theme="dark"] .hero-stat-card,
+    [data-theme="dark"] .role-card,
+    [data-theme="dark"] .step-card {
+      background: var(--bg-secondary);
+      border-color: var(--border-color);
+    }
+    [data-theme="dark"] .theme-toggle-btn {
+      background: var(--bg-secondary);
+      border-color: var(--border-color);
+      color: #f1f5f9;
+    }
+  </style>
+  <script>
+    (function() {
+      const savedTheme = localStorage.getItem('ccm_theme') || 'light';
+      document.documentElement.setAttribute('data-theme', savedTheme);
+    })();
+  </script>
+</head>
+<body class="landing-body">
+
+  <!-- Navbar -->
+  <header class="landing-navbar">
+    <a href="{% url 'home' %}" class="landing-brand">
+      <div class="landing-brand-badge">CCM</div>
+      <span>Campaign Call Manager</span>
+    </a>
+
+    <ul class="landing-nav-links">
+      <li><a href="#features">Capabilities</a></li>
+      <li><a href="#how-it-works">How It Works</a></li>
+      <li><a href="#roles">Roles</a></li>
+      <li><a href="#analytics">Analytics</a></li>
+    </ul>
+
+    <div style="display: flex; align-items: center; gap: 0.75rem;">
+      <!-- Theme Toggle (Light / Dark) -->
+      <button class="theme-toggle-btn" id="themeToggleBtn" title="Toggle Theme (Light / Dark)" aria-label="Toggle Theme" style="border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-main); cursor: pointer; width: 38px; height: 38px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; transition: all var(--transition-fast);">
+        <i data-lucide="moon" id="themeIcon" style="width: 18px; height: 18px;"></i>
+      </button>
+
+      {% if user.is_authenticated %}
+        <a href="{% url 'dashboard' %}" class="btn btn-primary" style="padding: 0.6rem 1.25rem; font-weight: 600;">
+          <i data-lucide="layout-dashboard" style="width: 18px; height: 18px;"></i>
+          <span>Open Dashboard</span>
+        </a>
+      {% else %}
+        <a href="{% url 'login' %}" class="btn btn-primary" style="padding: 0.6rem 1.35rem; font-weight: 600;">
+          <i data-lucide="log-in" style="width: 18px; height: 18px;"></i>
+          <span>Sign In</span>
+        </a>
+      {% endif %}
+      <button class="landing-mobile-menu-btn" id="mobileMenuBtn" aria-label="Toggle Navigation">
+        <i data-lucide="menu" style="width: 20px; height: 20px;"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero-section">
+    <div class="landing-container">
+      <div class="hero-badge">
+        <i data-lucide="shield-check" style="width: 16px; height: 16px;"></i>
+        <span>Enterprise Campaign & Tele-calling Operations Platform</span>
+      </div>
+
+      <h1 class="hero-title">
+        Manage Every <span>Customer Conversation.</span>
+      </h1>
+
+      <p class="hero-subtitle">
+        CCM empowers organizations to orchestrate structured calling campaigns, streamline lead assignment, capture questionnaire responses during live calls, and extract actionable operational intelligence.
+      </p>
+
+      <div class="hero-actions">
+        {% if user.is_authenticated %}
+          <a href="{% url 'dashboard' %}" class="btn btn-primary" style="padding: 0.85rem 1.75rem; font-size: 1rem; font-weight: 600;">
+            <i data-lucide="layout-dashboard"></i>
+            <span>Access Workspace Dashboard</span>
+          </a>
+        {% else %}
+          <a href="{% url 'login' %}" class="btn btn-primary" style="padding: 0.85rem 1.75rem; font-size: 1rem; font-weight: 600;">
+            <i data-lucide="log-in"></i>
+            <span>Sign In to System</span>
+          </a>
+        {% endif %}
+        <a href="#features" class="btn btn-secondary" id="exploreCapabilitiesBtn" style="padding: 0.85rem 1.5rem; font-size: 1rem;">
+          <i data-lucide="compass"></i>
+          <span>Explore Capabilities</span>
+        </a>
+      </div>
+
+      <!-- Live Operational Metrics Highlights -->
+      <div class="hero-stats-row">
+        <div class="hero-stat-card">
+          <div class="hero-stat-num">{{ stats.total_campaigns|default:"Active" }}</div>
+          <div class="hero-stat-lbl">Managed Campaigns</div>
+        </div>
+        <div class="hero-stat-card">
+          <div class="hero-stat-num">{{ stats.total_customers|default:"Verified" }}</div>
+          <div class="hero-stat-lbl">Customer Records</div>
+        </div>
+        <div class="hero-stat-card">
+          <div class="hero-stat-num">{{ stats.total_calls|default:"Complete" }}</div>
+          <div class="hero-stat-lbl">Recorded Calls</div>
+        </div>
+        <div class="hero-stat-card">
+          <div class="hero-stat-num">100%</div>
+          <div class="hero-stat-lbl">Role-Based Access</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Platform Overview & Capabilities -->
+  <section id="features" style="padding: 5rem 0; background-color: var(--bg-secondary); border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color);">
+    <a id="capabilities" style="position: relative; top: -80px; display: block; visibility: hidden;"></a>
+    <div class="landing-container">
+      <div class="section-title-wrap">
+        <span class="section-tag">Platform Capabilities</span>
+        <h2 class="section-heading">Built for Complete Tele-calling Workflows</h2>
+        <p class="section-desc">
+          From campaign inception to final reporting, CCM bridges the gap between management oversight and tele-caller operational efficiency.
+        </p>
+      </div>
+
+      <div class="features-grid">
+        <!-- Campaign Management -->
+        <div class="feature-box">
+          <div class="feature-icon-wrapper feature-icon-blue">
+            <i data-lucide="megaphone" style="width: 26px; height: 26px;"></i>
+          </div>
+          <h3 class="feature-title">Campaign Management</h3>
+          <p class="feature-text">
+            Create, configure, and monitor multi-stage calling campaigns with defined targets, date schedules, and progress tracking.
+          </p>
+          <ul class="feature-points">
+            <li><i data-lucide="check"></i> Lifecycle statuses: Draft, Active, Paused, Completed</li>
+            <li><i data-lucide="check"></i> Dynamic target progress calculations</li>
+            <li><i data-lucide="check"></i> Real-time completion percentage tracking</li>
+          </ul>
+        </div>
+
+        <!-- Customer & Lead Management -->
+        <div class="feature-box">
+          <div class="feature-icon-wrapper feature-icon-green">
+            <i data-lucide="users" style="width: 26px; height: 26px;"></i>
+          </div>
+          <h3 class="feature-title">Customer & Lead Management</h3>
+          <p class="feature-text">
+            Centralized directory of contacts with automated duplicate detection, bulk CSV/XLSX import, and flexible tele-caller assignment.
+          </p>
+          <ul class="feature-points">
+            <li><i data-lucide="check"></i> Validated CSV and XLSX spreadsheet importer</li>
+            <li><i data-lucide="check"></i> Round-robin and manual lead assignment</li>
+            <li><i data-lucide="check"></i> Complete interaction and call history logs</li>
+          </ul>
+        </div>
+
+        <!-- Calling Console -->
+        <div class="feature-box">
+          <div class="feature-icon-wrapper feature-icon-yellow">
+            <i data-lucide="phone-call" style="width: 26px; height: 26px;"></i>
+          </div>
+          <h3 class="feature-title">Live Calling Console</h3>
+          <p class="feature-text">
+            Dedicated distraction-free interface for tele-callers to dial customers, track call duration, and capture questionnaire data in real time.
+          </p>
+          <ul class="feature-points">
+            <li><i data-lucide="check"></i> Standardized outcomes: Completed, Busy, No Answer</li>
+            <li><i data-lucide="check"></i> Live stopwatch timer for accurate durations</li>
+            <li><i data-lucide="check"></i> Integrated follow-up scheduler during calls</li>
+          </ul>
+        </div>
+
+        <!-- Questionnaire Engine -->
+        <div class="feature-box">
+          <div class="feature-icon-wrapper feature-icon-purple">
+            <i data-lucide="clipboard-list" style="width: 26px; height: 26px;"></i>
+          </div>
+          <h3 class="feature-title">Questionnaire Builder</h3>
+          <p class="feature-text">
+            Attach structured survey questionnaires directly to campaigns with multiple question formats to ensure standardized customer data collection.
+          </p>
+          <ul class="feature-points">
+            <li><i data-lucide="check"></i> Single Choice, Multiple Choice, Yes/No</li>
+            <li><i data-lucide="check"></i> 1–5 Rating Scales & Open-Ended suggestions</li>
+            <li><i data-lucide="check"></i> Interactive questionnaire preview tool</li>
+          </ul>
+        </div>
+
+        <!-- Follow-up Tracking -->
+        <div class="feature-box">
+          <div class="feature-icon-wrapper feature-icon-indigo">
+            <i data-lucide="calendar" style="width: 26px; height: 26px;"></i>
+          </div>
+          <h3 class="feature-title">Follow-up Tracking</h3>
+          <p class="feature-text">
+            Never miss an interested prospect. Schedule callbacks with specific dates and times, with automated overdue detection and priority queues.
+          </p>
+          <ul class="feature-points">
+            <li><i data-lucide="check"></i> Daily callback queue for tele-callers</li>
+            <li><i data-lucide="check"></i> Automated overdue status management</li>
+            <li><i data-lucide="check"></i> Admin oversight of pending follow-up workload</li>
+          </ul>
+        </div>
+
+        <!-- Analytics & Reports -->
+        <div class="feature-box">
+          <div class="feature-icon-wrapper feature-icon-cyan">
+            <i data-lucide="bar-chart-2" style="width: 26px; height: 26px;"></i>
+          </div>
+          <h3 class="feature-title">Analytics & Report Center</h3>
+          <p class="feature-text">
+            Enterprise management dashboard with date range filters, call outcome donuts, agent productivity metrics, and PDF/Excel downloads.
+          </p>
+          <ul class="feature-points">
+            <li><i data-lucide="check"></i> Publication-grade PDF exports via ReportLab</li>
+            <li><i data-lucide="check"></i> Formatted Excel exports via OpenPyXL</li>
+            <li><i data-lucide="check"></i> 100% database-derived unified metrics engine</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- How It Works Section (3-Step Operational Flow) -->
+  <section id="how-it-works" style="padding: 5rem 0;">
+    <div class="landing-container">
+      <div class="section-title-wrap">
+        <span class="section-tag">Streamlined Process</span>
+        <h2 class="section-heading">How CCM Works in 3 Steps</h2>
+        <p class="section-desc">
+          A seamless flow designed to turn lead lists into organized customer conversations and verifiable business insights.
+        </p>
+      </div>
+
+      <div class="steps-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem;">
+        <div class="step-card feature-box" style="text-align: center; align-items: center;">
+          <div style="width: 52px; height: 52px; border-radius: 50%; background: var(--primary); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.25rem; margin-bottom: 1.25rem;">1</div>
+          <h3 class="feature-title">Create & Manage Campaigns</h3>
+          <p class="feature-text">Set call targets, configure dynamic questionnaires with single/multiple-choice inputs, and import customer leads via CSV or Excel.</p>
+        </div>
+
+        <div class="step-card feature-box" style="text-align: center; align-items: center;">
+          <div style="width: 52px; height: 52px; border-radius: 50%; background: var(--success); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.25rem; margin-bottom: 1.25rem;">2</div>
+          <h3 class="feature-title">Connect with Customers</h3>
+          <p class="feature-text">Tele-callers access their dedicated console with live timer, dial leads, collect structured survey answers, and schedule callback reminders.</p>
+        </div>
+
+        <div class="step-card feature-box" style="text-align: center; align-items: center;">
+          <div style="width: 52px; height: 52px; border-radius: 50%; background: var(--info); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.25rem; margin-bottom: 1.25rem;">3</div>
+          <h3 class="feature-title">Track Results & Reports</h3>
+          <p class="feature-text">Management monitors real-time completion rates, caller productivity, and response trends with instant PDF and Excel exports.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Role-Based Access Section -->
+  <section id="roles" style="padding: 5rem 0; background-color: var(--bg-secondary); border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color);">
+    <div class="landing-container">
+      <div class="section-title-wrap">
+        <span class="section-tag">Access Architecture</span>
+        <h2 class="section-heading">Strict Role-Based Access Control</h2>
+        <p class="section-desc">
+          CCM enforces clear operational separation between supervisory management and tele-calling execution.
+        </p>
+      </div>
+
+      <div class="roles-grid">
+        <!-- Admin Role -->
+        <div class="role-card admin-card">
+          <span class="role-badge role-badge-admin">Management Role</span>
+          <h3 class="role-title">System Administrator (ADMIN)</h3>
+          <p class="role-desc">
+            Full oversight of organization campaigns, customer databases, tele-caller workforce, and executive reports.
+          </p>
+          <ul class="role-checklist">
+            <li>
+              <i data-lucide="shield" style="color: var(--primary);"></i>
+              <span><strong>Campaign Control:</strong> Full CRUD operations, status transitions, and target definition.</span>
+            </li>
+            <li>
+              <i data-lucide="upload-cloud" style="color: var(--primary);"></i>
+              <span><strong>Data Operations:</strong> Bulk CSV/XLSX customer import and assignment to agents.</span>
+            </li>
+            <li>
+              <i data-lucide="bar-chart" style="color: var(--primary);"></i>
+              <span><strong>Advanced Analytics:</strong> Global date-filtered performance metrics, outcomes, and agent comparisons.</span>
+            </li>
+            <li>
+              <i data-lucide="file-text" style="color: var(--primary);"></i>
+              <span><strong>Report Center:</strong> Previews and formal downloads of PDF and Excel operational reports.</span>
+            </li>
+            <li>
+              <i data-lucide="user-check" style="color: var(--primary);"></i>
+              <span><strong>Team Management:</strong> Provisioning and monitoring tele-caller accounts and workloads.</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Telecaller Role -->
+        <div class="role-card telecaller-card">
+          <span class="role-badge role-badge-telecaller">Execution Role</span>
+          <h3 class="role-title">Tele-caller Agent (TELE_CALLER)</h3>
+          <p class="role-desc">
+            Focused, distraction-free environment for daily calling targets, callback reminders, and questionnaire logging.
+          </p>
+          <ul class="role-checklist">
+            <li>
+              <i data-lucide="check-circle" style="color: var(--success);"></i>
+              <span><strong>Personal Workload Dashboard:</strong> Today's pending calls, completed calls, and scheduled callbacks.</span>
+            </li>
+            <li>
+              <i data-lucide="phone" style="color: var(--success);"></i>
+              <span><strong>Live Call Console:</strong> Dialing assigned leads, duration recording, and questionnaire response entry.</span>
+            </li>
+            <li>
+              <i data-lucide="clock" style="color: var(--success);"></i>
+              <span><strong>Follow-up Management:</strong> Logging future callback dates and managing personal scheduled follow-ups.</span>
+            </li>
+            <li>
+              <i data-lucide="lock" style="color: var(--text-muted);"></i>
+              <span><strong>Data Isolation:</strong> Zero access to other agents' leads, administrative tools, or global reports.</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Analytics Highlights Section -->
+  <section id="analytics" style="padding: 0 0 5rem;">
+    <div class="landing-container">
+      <div class="analytics-preview-wrap">
+        <div class="analytics-preview-grid">
+          <div>
+            <div class="analytics-pill">
+              <i data-lucide="trending-up" style="width: 14px; height: 14px;"></i>
+              <span>Management Intelligence</span>
+            </div>
+            <h2 class="analytics-preview-title">Real-Time Data Insights & Audit-Ready Reporting</h2>
+            <p class="analytics-preview-desc">
+              Every call outcome, duration metric, and questionnaire response is processed through CCM's centralized analytics engine. Admins can filter by date range, isolate specific campaigns, track tele-caller productivity, and export formatted PDF and Excel files.
+            </p>
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+              {% if user.is_authenticated and user.is_admin_user %}
+                <a href="{% url 'analytics' %}" class="btn btn-primary" style="background: #3b82f6; border-color: #3b82f6;">
+                  <i data-lucide="pie-chart"></i> View Analytics
+                </a>
+                <a href="{% url 'reports' %}" class="btn btn-secondary" style="background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); color: #fff;">
+                  <i data-lucide="file-spreadsheet"></i> Report Center
+                </a>
+              {% else %}
+                <a href="{% url 'login' %}" class="btn btn-primary" style="background: #3b82f6; border-color: #3b82f6;">
+                  <i data-lucide="lock"></i> Sign In to View Reports
+                </a>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="metric-pill-grid">
+            <div class="metric-pill-box">
+              <div class="metric-pill-val">78.4%</div>
+              <div class="metric-pill-lbl">Campaign Completion Tracking</div>
+            </div>
+            <div class="metric-pill-box">
+              <div class="metric-pill-val">5 Outcomes</div>
+              <div class="metric-pill-lbl">Completed, Busy, No Answer, etc.</div>
+            </div>
+            <div class="metric-pill-box">
+              <div class="metric-pill-val">5 Formats</div>
+              <div class="metric-pill-lbl">Comprehensive Business Reports</div>
+            </div>
+            <div class="metric-pill-box">
+              <div class="metric-pill-val">PDF & Excel</div>
+              <div class="metric-pill-lbl">Multi-format Export Pipeline</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Final CTA Section -->
+  <section class="landing-container">
+    <div class="cta-banner">
+      <h2 class="cta-title">Ready to access the CCM platform?</h2>
+      <p class="cta-desc">
+        Sign in to your account to manage ongoing campaigns, assign tele-callers, record calls, or monitor real-time analytics.
+      </p>
+      {% if user.is_authenticated %}
+        <a href="{% url 'dashboard' %}" class="btn" style="background: #ffffff; color: var(--primary); padding: 0.85rem 2rem; font-weight: 700; font-size: 1.05rem; box-shadow: var(--shadow-md);">
+          <i data-lucide="arrow-right"></i> Continue to Workspace
+        </a>
+      {% else %}
+        <a href="{% url 'login' %}" class="btn" style="background: #ffffff; color: var(--primary); padding: 0.85rem 2rem; font-weight: 700; font-size: 1.05rem; box-shadow: var(--shadow-md);">
+          <i data-lucide="log-in"></i> Sign In to CCM
+        </a>
+      {% endif %}
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="landing-footer">
+    <div class="footer-grid">
+      <div>
+        <a href="{% url 'home' %}" class="landing-brand" style="margin-bottom: 0.75rem; display: inline-flex;">
+          <div class="landing-brand-badge" style="width: 32px; height: 32px; font-size: 0.95rem;">CCM</div>
+          <span>Campaign Call Manager</span>
+        </a>
+        <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.6; max-width: 320px;">
+          Centralized enterprise platform for tele-calling campaign orchestration, questionnaire responses, follow-up scheduling, and operational analytics.
+        </p>
+      </div>
+
+      <div>
+        <div class="footer-col-title">Core Modules</div>
+        <ul class="footer-links">
+          <li><a href="#platform">Campaign Management</a></li>
+          <li><a href="#platform">Customer Directory</a></li>
+          <li><a href="#platform">Live Calling Console</a></li>
+          <li><a href="#platform">Questionnaires</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <div class="footer-col-title">Analytics & Tools</div>
+        <ul class="footer-links">
+          <li><a href="#analytics">KPI Monitoring</a></li>
+          <li><a href="#analytics">Outcome Analysis</a></li>
+          <li><a href="#analytics">PDF & Excel Reports</a></li>
+          <li><a href="#roles">Access Control</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <div class="footer-col-title">Platform Access</div>
+        <ul class="footer-links">
+          {% if user.is_authenticated %}
+            <li><a href="{% url 'dashboard' %}">Dashboard Workspace</a></li>
+            <li><a href="{% url 'logout' %}">Log Out</a></li>
+          {% else %}
+            <li><a href="{% url 'login' %}">Sign In</a></li>
+            <li><a href="{% url 'login' %}">Tele-caller Portal</a></li>
+            <li><a href="{% url 'login' %}">Admin Portal</a></li>
+          {% endif %}
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <div>&copy; {% now "Y" %} CCM — Campaign Call Manager. All rights reserved.</div>
+      <div>Centralized Customer Communication Management Platform</div>
+    </div>
+  </footer>
+
+  <script>
+    // Initialize Lucide icons
+    if (typeof lucide !== 'undefined') {
+      lucide.createIcons();
+    }
+
+    // Mobile Navbar Drawer Toggle
+    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+    const landingNavLinks = document.querySelector('.landing-nav-links');
+    if (mobileMenuBtn && landingNavLinks) {
+      mobileMenuBtn.addEventListener('click', () => {
+        landingNavLinks.classList.toggle('open');
+      });
+      landingNavLinks.querySelectorAll('a').forEach(link => {
+        link.addEventListener('click', () => {
+          landingNavLinks.classList.remove('open');
+        });
+      });
+    }
+
+    // Theme Toggle (Light / Dark) with LocalStorage persistence
+    const themeToggleBtn = document.getElementById('themeToggleBtn');
+    const themeIcon = document.getElementById('themeIcon');
+
+    function updateLandingThemeIcon(theme) {
+      if (!themeIcon) return;
+      if (theme === 'dark') {
+        themeIcon.setAttribute('data-lucide', 'sun');
+      } else {
+        themeIcon.setAttribute('data-lucide', 'moon');
+      }
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+
+    const initialTheme = document.documentElement.getAttribute('data-theme') || 'light';
+    updateLandingThemeIcon(initialTheme);
+
+    if (themeToggleBtn) {
+      themeToggleBtn.addEventListener('click', () => {
+        const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+        const nextTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', nextTheme);
+        localStorage.setItem('ccm_theme', nextTheme);
+        updateLandingThemeIcon(nextTheme);
+      });
+    }
+
+    // Explore Capabilities Smooth Scroll
+    const exploreBtn = document.getElementById('exploreCapabilitiesBtn');
+    if (exploreBtn) {
+      exploreBtn.addEventListener('click', (e) => {
+        const target = document.getElementById('features');
+        if (target) {
+          e.preventDefault();
+          target.scrollIntoView({ behavior: 'smooth' });
+        }
+      });
+    }
+  </script>
+</body>
+</html>

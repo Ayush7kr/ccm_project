@@ -1,0 +1,50 @@
+<header class="navbar">
+  <div class="nav-left">
+    <button class="sidebar-toggle" id="sidebarToggle" title="Toggle Sidebar">
+      <i data-lucide="menu"></i>
+    </button>
+    <h1 class="page-title">{% block page_title %}Dashboard{% endblock %}</h1>
+  </div>
+
+  <div class="nav-right">
+    <!-- Theme Toggle -->
+    <button class="theme-toggle" id="themeToggleBtn" title="Toggle Theme">
+      <i data-lucide="moon"></i>
+    </button>
+
+    <!-- Notification Bell -->
+    <div style="position: relative;">
+      <button class="notif-btn" id="notifBtn" title="Notifications">
+        <i data-lucide="bell"></i>
+        {% if unread_notification_count > 0 %}
+          <span class="notif-badge">{{ unread_notification_count }}</span>
+        {% endif %}
+      </button>
+
+      <!-- Dropdown -->
+      <div id="notifDropdown" class="card" style="display: none; position: absolute; right: 0; top: 50px; width: 320px; z-index: 1000; padding: 1rem; box-shadow: var(--shadow-lg);">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; margin-bottom: 0.75rem;">
+          <h4 style="font-size: 0.9rem; font-weight: 600;">Notifications</h4>
+          <a href="{% url 'notification_list' %}" style="font-size: 0.75rem;">View All</a>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 250px; overflow-y: auto;">
+          {% for notif in unread_notifications %}
+            <a href="{% url 'notification_read_single' notif.pk %}" style="text-decoration: none; color: inherit; padding: 0.6rem; background-color: var(--primary-light); border-radius: 6px; display: block; transition: background-color 0.15s ease;">
+              <div style="font-weight: 700; font-size: 0.82rem; color: var(--text-main);">{{ notif.title }}</div>
+              <div style="font-size: 0.75rem; color: var(--text-muted); text-overflow: ellipsis; overflow: hidden; white-space: nowrap; margin-top: 1px;">{{ notif.message }}</div>
+              <div style="font-size: 0.68rem; color: var(--primary); margin-top: 3px; font-weight: 600;">{{ notif.created_at|timesince }} ago &bull; Click to open</div>
+            </a>
+          {% empty %}
+
+            <div style="text-align: center; color: var(--text-muted); padding: 1rem; font-size: 0.8rem;">No unread notifications</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+<style>
+  #notifDropdown.active {
+    display: block !important;
+  }
+</style>

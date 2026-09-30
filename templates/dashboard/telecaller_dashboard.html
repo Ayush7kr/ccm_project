@@ -1,0 +1,132 @@
+{% extends 'base.html' %}
+
+{% block title %}Tele-caller Dashboard — CCM{% endblock %}
+{% block page_title %}My Call Workspace{% endblock %}
+
+{% block content %}
+<div class="card" style="background: linear-gradient(135deg, var(--bg-secondary), var(--primary-light)); border: 1px solid var(--border-color); padding: 1.25rem; margin-bottom: 1.75rem;">
+  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+    <div>
+      <h3 style="font-size: 1.1rem; font-weight: 700;">Welcome, {{ user.get_full_name|default:user.username }}!</h3>
+      <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">Review your assigned calls, execute questionnaires, and manage follow-up reminders</p>
+    </div>
+  </div>
+</div>
+
+<!-- Tele-caller KPI Cards (Focused on Workload) -->
+<div class="kpi-grid-4">
+  <div class="stat-card">
+    <div class="stat-info">
+      <div class="stat-value" style="color: var(--primary);">{{ todays_calls }}</div>
+      <div class="stat-label">Today's Calls</div>
+    </div>
+    <div class="stat-icon blue"><i data-lucide="phone"></i></div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-info">
+      <div class="stat-value" style="color: var(--warning);">{{ calls_pending }}</div>
+      <div class="stat-label">Pending Calls</div>
+    </div>
+    <div class="stat-icon yellow"><i data-lucide="clock"></i></div>
+  </div>
+
+  <a href="{% url 'followup_list' %}" class="stat-card" style="text-decoration: none;">
+    <div class="stat-info">
+      <div class="stat-value" style="color: var(--danger);">{{ followups_due }}</div>
+      <div class="stat-label">Follow-ups Due</div>
+    </div>
+    <div class="stat-icon red"><i data-lucide="calendar-alert"></i></div>
+  </a>
+
+  <div class="stat-card">
+    <div class="stat-info">
+      <div class="stat-value" style="color: var(--success);">{{ completed_today }}</div>
+      <div class="stat-label">Completed Today</div>
+    </div>
+    <div class="stat-icon green"><i data-lucide="check-circle-2"></i></div>
+  </div>
+</div>
+
+<!-- MY NEXT TASKS Section -->
+<div class="card">
+  <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+    <div>
+      <h3 class="card-title">MY NEXT TASKS</h3>
+      <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">Prioritized caller queue: Scheduled callbacks and assigned campaign leads</p>
+    </div>
+    <div style="font-size: 0.8rem; color: var(--text-muted);">
+      Total Queue: <strong>{{ next_tasks|length }}</strong> leads
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Customer</th>
+          <th>Campaign</th>
+          <th>Task</th>
+          <th>Due Time</th>
+          <th style="text-align: right;">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for task in next_tasks %}
+        <tr {% if task.is_urgent %}style="background-color: var(--danger-light);"{% endif %}>
+          <td>
+            <a href="{% url 'customer_detail' task.customer.pk %}" style="font-weight: 700; text-decoration: none; color: var(--text-main);">
+              {{ task.customer.name }}
+            </a>
+            <div style="font-size: 0.75rem; color: var(--text-muted);">
+              {{ task.customer.company|default:"Individual Lead" }} &bull; <strong>{{ task.customer.phone }}</strong>
+            </div>
+          </td>
+          <td>
+            <span style="font-weight: 600; font-size: 0.85rem;">{{ task.campaign.name|default:"General Outreach" }}</span>
+          </td>
+          <td>
+            {% if task.is_urgent %}
+              <span class="badge badge-danger" style="font-size: 0.75rem;">
+                <i data-lucide="phone-forwarded" style="width: 12px; height: 12px; vertical-align: middle;"></i> {{ task.task }}
+              </span>
+            {% else %}
+              <span class="badge badge-info" style="font-size: 0.75rem;">
+                <i data-lucide="phone-outgoing" style="width: 12px; height: 12px; vertical-align: middle;"></i> {{ task.task }}
+              </span>
+            {% endif %}
+          </td>
+          <td>
+            <strong style="color: {% if task.is_urgent %}var(--danger){% else %}var(--text-main){% endif %}; font-size: 0.85rem;">
+              {{ task.due_time }}
+            </strong>
+          </td>
+          <td style="text-align: right;">
+            {% if task.assignment_pk %}
+              <a href="{% url 'record_call' task.assignment_pk %}" class="btn btn-primary btn-sm" style="font-weight: 600;">
+                <i data-lucide="phone"></i> Start Call
+              </a>
+            {% else %}
+              <a href="{% url 'customer_detail' task.customer.pk %}" class="btn btn-outline btn-sm">
+                View Profile
+              </a>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5">
+            <div class="empty-state" style="padding: 2.5rem 1rem;">
+              <div class="empty-state-icon"><i data-lucide="check-circle-2"></i></div>
+              <h4 class="empty-state-title">No Pending Tasks</h4>
+              <p class="empty-state-desc">You are all caught up! There are no pending leads or callbacks waiting in your queue.</p>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

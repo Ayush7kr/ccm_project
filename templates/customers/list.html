@@ -1,0 +1,167 @@
+{% extends 'base.html' %}
+
+{% block title %}Customers Directory — CCM{% endblock %}
+{% block page_title %}Customer Directory{% endblock %}
+
+{% block content %}
+<div class="card" style="margin-bottom: 1.5rem;">
+  <div class="card-header" style="flex-wrap: wrap; gap: 1rem;">
+    <div>
+      <h3 class="card-title">Customers Roster</h3>
+      <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">Search, filter, and manage customer leads across campaigns</p>
+    </div>
+    {% if user.is_admin_user %}
+    <div style="display: flex; gap: 0.75rem;">
+      <a href="{% url 'customer_import' %}" class="btn btn-outline">
+        <i data-lucide="file-up"></i> Import CSV/Excel
+      </a>
+      <a href="{% url 'customer_assign' %}" class="btn btn-secondary">
+        <i data-lucide="user-plus"></i> Assign Customers
+      </a>
+      <a href="{% url 'customer_create' %}" class="btn btn-primary">
+        <i data-lucide="plus"></i> Add Customer
+      </a>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Search & Filter Form -->
+  <form method="GET" action="{% url 'customer_list' %}" style="display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.25rem;">
+    <div style="flex: 1; min-width: 220px;">
+      <input type="text" name="q" value="{{ search_query }}" class="form-control" placeholder="Search name, phone, email, company, city...">
+    </div>
+    <div style="width: 200px;">
+      <select name="campaign" class="form-select">
+        <option value="">All Campaigns</option>
+        {% for c in campaigns %}
+          <option value="{{ c.id }}" {% if campaign_filter == c.id|stringformat:"i" %}selected{% endif %}>{{ c.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div style="width: 160px;">
+      <select name="status" class="form-select">
+        <option value="">All Call Statuses</option>
+        <option value="Unassigned" {% if status_filter == 'Unassigned' %}selected{% endif %}>Unassigned</option>
+        <option value="Assigned" {% if status_filter == 'Assigned' %}selected{% endif %}>Assigned</option>
+        <option value="In Progress" {% if status_filter == 'In Progress' %}selected{% endif %}>In Progress</option>
+        <option value="Completed" {% if status_filter == 'Completed' %}selected{% endif %}>Completed</option>
+      </select>
+    </div>
+    <button type="submit" class="btn btn-secondary">
+      <i data-lucide="filter"></i> Filter
+    </button>
+  </form>
+
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Customer Name</th>
+          <th>Phone</th>
+          <th>Email / Company</th>
+          <th>Location</th>
+          <th>Enrolled Campaign(s)</th>
+          <th>Assigned Tele-caller</th>
+          <th>Last Interaction</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in customers_data %}
+        <tr>
+          <td>
+            <a href="{% url 'customer_detail' item.customer.pk %}" style="font-weight: 600; color: var(--text-main);">
+              {{ item.customer.name }}
+            </a>
+            <div style="font-size: 0.75rem; color: var(--text-muted);">Source: {{ item.customer.source }}</div>
+          </td>
+          <td><strong>{{ item.customer.phone }}</strong></td>
+          <td>
+            <div style="font-size: 0.85rem;">{{ item.customer.email|default:"—" }}</div>
+            <div style="font-size: 0.75rem; color: var(--text-muted);">{{ item.customer.company|default:"" }}</div>
+          </td>
+          <td style="font-size: 0.85rem;">
+            {% if item.customer.city %}{{ item.customer.city }}{% if item.customer.state %}, {{ item.customer.state }}{% endif %}{% else %}—{% endif %}
+          </td>
+          <td>
+            {% for link in item.campaign_links %}
+              <a href="{% url 'campaign_detail' link.campaign.pk %}" class="badge badge-secondary" style="margin-bottom: 2px;">
+                {{ link.campaign.name }}
+              </a>
+            {% empty %}
+              <span style="font-size: 0.75rem; color: var(--text-subtle);">None</span>
+            {% endfor %}
+          </td>
+          <td>
+            {% for link in item.campaign_links %}
+              {% if link.assigned_telecaller %}
+                <div style="font-size: 0.8rem; font-weight: 600;">{{ link.assigned_telecaller.get_full_name|default:link.assigned_telecaller.username }}</div>
+              {% else %}
+                <span class="badge badge-warning">Unassigned</span>
+              {% endif %}
+            {% empty %}
+              —
+            {% endfor %}
+          </td>
+          <td>
+            {% if item.last_call %}
+              <span class="badge {% if item.last_call.call_status == 'Completed' %}badge-success{% else %}badge-info{% endif %}">
+                {{ item.last_call.call_status }}
+              </span>
+              <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 2px;">{{ item.last_call.created_at|date:"M d, H:i" }}</div>
+            {% else %}
+              <span style="font-size: 0.75rem; color: var(--text-subtle);">No calls yet</span>
+            {% endif %}
+          </td>
+          <td>
+            <div style="display: flex; gap: 0.35rem;">
+              <a href="{% url 'customer_detail' item.customer.pk %}" class="btn btn-outline btn-sm" title="View Profile">
+                <i data-lucide="eye"></i>
+              </a>
+              {% if user.is_admin_user %}
+              <a href="{% url 'customer_edit' item.customer.pk %}" class="btn btn-outline btn-sm" title="Edit">
+                <i data-lucide="edit-3"></i>
+              </a>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="8">
+            <div class="empty-state">
+              <div class="empty-state-icon"><i data-lucide="users"></i></div>
+              <h4 class="empty-state-title">No Customers Found</h4>
+              <p class="empty-state-desc">No customer records match your filter criteria or none have been imported yet.</p>
+              {% if user.is_admin_user %}
+              <a href="{% url 'customer_import' %}" class="btn btn-primary">
+                <i data-lucide="file-up"></i> Import Customer CSV
+              </a>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  {% if page_obj.has_other_pages %}
+  <div class="pagination">
+    <div class="pagination-info">
+      Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ page_obj.paginator.count }} customers
+    </div>
+    <div class="pagination-links">
+      {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}&q={{ search_query }}&campaign={{ campaign_filter }}&status={{ status_filter }}" class="page-link">&laquo; Prev</a>
+      {% endif %}
+      <span class="page-link active">{{ page_obj.number }}</span>
+      {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}&q={{ search_query }}&campaign={{ campaign_filter }}&status={{ status_filter }}" class="page-link">Next &raquo;</a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

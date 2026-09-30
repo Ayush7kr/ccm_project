@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+
+{% block title %}Questionnaire Preview — {{ campaign.name }} — CCM{% endblock %}
+{% block page_title %}Questionnaire Tele-caller View Preview{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 750px; margin: 0 auto;">
+  <div class="card-header">
+    <div>
+      <h3 class="card-title">{{ questionnaire.title|default:"Untitled Questionnaire" }}</h3>
+      <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">Previewing tele-caller interface for campaign: <strong>{{ campaign.name }}</strong></p>
+    </div>
+    <a href="{% url 'questionnaire_builder' campaign.pk %}" class="btn btn-outline btn-sm">
+      <i data-lucide="edit-3"></i> Back to Builder
+    </a>
+  </div>
+
+  {% if questionnaire.description %}
+    <div class="alert alert-info">
+      <i data-lucide="info"></i>
+      <span>{{ questionnaire.description }}</span>
+    </div>
+  {% endif %}
+
+  <div style="display: flex; flex-direction: column; gap: 1.5rem; margin-top: 1rem;">
+    {% for q in questions %}
+      <div style="padding: 1.25rem; border: 1px solid var(--border-color); border-radius: var(--radius-md); background-color: var(--bg-primary);">
+        <label style="font-weight: 600; font-size: 0.95rem; display: block; margin-bottom: 0.75rem;">
+          Q{{ forloop.counter }}. {{ q.question_text }} {% if q.required %}<span style="color: var(--danger);">*</span>{% endif %}
+        </label>
+
+        {% if q.question_type == 'single_choice' %}
+          <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+            {% for opt in q.options %}
+              <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.9rem;">
+                <input type="radio" name="preview_q_{{ q.id }}" value="{{ opt }}" disabled>
+                {{ opt }}
+              </label>
+            {% endfor %}
+          </div>
+        {% elif q.question_type == 'multiple_choice' %}
+          <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+            {% for opt in q.options %}
+              <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.9rem;">
+                <input type="checkbox" name="preview_q_{{ q.id }}" value="{{ opt }}" disabled>
+                {{ opt }}
+              </label>
+            {% endfor %}
+          </div>
+        {% elif q.question_type == 'rating_scale' %}
+          <div style="display: flex; gap: 1rem;">
+            {% for num in "12345" %}
+              <label style="display: flex; flex-direction: column; align-items: center; gap: 0.25rem; font-size: 0.85rem;">
+                <input type="radio" name="preview_q_{{ q.id }}" value="{{ num }}" disabled>
+                <span>{{ num }} ★</span>
+              </label>
+            {% endfor %}
+          </div>
+        {% elif q.question_type == 'yes_no' %}
+          <div style="display: flex; gap: 1.5rem;">
+            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+              <input type="radio" name="preview_q_{{ q.id }}" value="Yes" disabled> Yes
+            </label>
+            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+              <input type="radio" name="preview_q_{{ q.id }}" value="No" disabled> No
+            </label>
+          </div>
+        {% else %}
+          <textarea class="form-textarea" rows="3" disabled placeholder="Tele-caller will enter notes here..."></textarea>
+        {% endif %}
+      </div>
+    {% empty %}
+      <div class="empty-state">
+        <div class="empty-state-icon"><i data-lucide="help-circle"></i></div>
+        <h4 class="empty-state-title">No Questions Added</h4>
+        <p class="empty-state-desc">Go to the Questionnaire Builder to add questions.</p>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+
+{% block title %}Import Preview & Validation — CCM{% endblock %}
+{% block page_title %}Spreadsheet Preview & Confirmation{% endblock %}
+
+{% block content %}
+<div class="card" style="margin-bottom: 1.5rem;">
+  <div class="card-header">
+    <div>
+      <h3 class="card-title">Spreadsheet Parsing Summary</h3>
+      <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">Review parsed rows and select target campaign enrollment before confirming</p>
+    </div>
+  </div>
+
+  <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+    <div class="badge badge-info" style="font-size: 0.85rem; padding: 0.5rem 1rem;">Total Rows: {{ total_count }}</div>
+    <div class="badge badge-success" style="font-size: 0.85rem; padding: 0.5rem 1rem;">Valid Rows: {{ valid_count }}</div>
+    {% if invalid_count > 0 %}
+    <div class="badge badge-danger" style="font-size: 0.85rem; padding: 0.5rem 1rem;">Invalid/Skipped Rows: {{ invalid_count }}</div>
+    {% endif %}
+  </div>
+
+  <form method="POST" action="{% url 'customer_import' %}">
+    {% csrf_token %}
+    <input type="hidden" name="confirm_import" value="1">
+
+    <div class="form-group" style="max-width: 400px; margin-bottom: 1.5rem;">
+      <label for="campaign_id">Enroll Imported Customers into Campaign (Optional)</label>
+      <select id="campaign_id" name="campaign_id" class="form-select">
+        <option value="">Do Not Enroll (Add to Directory Only)</option>
+        {% for c in campaigns %}
+          <option value="{{ c.id }}">{{ c.name }} ({{ c.get_status_display }})</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="table-responsive" style="max-height: 400px; overflow-y: auto; margin-bottom: 1.5rem;">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Row #</th>
+            <th>Status</th>
+            <th>Name</th>
+            <th>Phone</th>
+            <th>Email</th>
+            <th>Company</th>
+            <th>Location</th>
+            <th>Validation Note</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in rows %}
+          <tr style="{% if not r.is_valid %}background-color: var(--danger-light);{% endif %}">
+            <td>Row {{ r.row_num }}</td>
+            <td>
+              {% if r.is_valid %}
+                <span class="badge badge-success">Valid</span>
+              {% else %}
+                <span class="badge badge-danger">Invalid</span>
+              {% endif %}
+            </td>
+            <td><strong>{{ r.name|default:"—" }}</strong></td>
+            <td>{{ r.phone|default:"—" }}</td>
+            <td>{{ r.email|default:"—" }}</td>
+            <td>{{ r.company|default:"—" }}</td>
+            <td>{{ r.city }}{% if r.state %}, {{ r.state }}{% endif %}</td>
+            <td style="font-size: 0.8rem; color: {% if r.is_valid %}var(--text-muted){% else %}var(--danger){% endif %};">
+              {{ r.error|default:"Ready to import" }}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div style="display: flex; justify-content: flex-end; gap: 1rem;">
+      <a href="{% url 'customer_import' %}" class="btn btn-secondary">Cancel & Re-upload</a>
+      <button type="submit" class="btn btn-primary" {% if valid_count == 0 %}disabled{% endif %}>
+        <i data-lucide="check-circle-2"></i> Confirm & Import {{ valid_count }} Valid Customer(s)
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}

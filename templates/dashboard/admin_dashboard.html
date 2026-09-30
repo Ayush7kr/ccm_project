@@ -1,0 +1,307 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin Overview Dashboard — CCM{% endblock %}
+{% block page_title %}Executive Dashboard Overview{% endblock %}
+
+{% block content %}
+<!-- Quick Action Banner -->
+<div class="card" style="background: linear-gradient(135deg, var(--bg-secondary), var(--primary-light)); border: 1px solid var(--border-color); padding: 1.25rem; margin-bottom: 1.75rem;">
+  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+    <div>
+      <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--text-main);">Quick Management Actions</h3>
+      <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">Launch campaigns, bulk import leads, allocate caller tasks, or export reports</p>
+    </div>
+    <div style="display: flex; gap: 0.6rem; flex-wrap: wrap;">
+      <a href="{% url 'campaign_create' %}" class="btn btn-primary btn-sm">
+        <i data-lucide="plus-circle"></i> Create Campaign
+      </a>
+      <a href="{% url 'customer_import' %}" class="btn btn-outline btn-sm">
+        <i data-lucide="file-up"></i> Import Customers
+      </a>
+      <a href="{% url 'customer_assign' %}" class="btn btn-outline btn-sm">
+        <i data-lucide="user-plus"></i> Assign Customers
+      </a>
+      <a href="{% url 'reports' %}" class="btn btn-secondary btn-sm">
+        <i data-lucide="file-text"></i> Reports
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- Top KPI Cards (Intentional 3x2 Grid) -->
+<div class="kpi-grid">
+  <!-- Row 1: Campaigns & Customers -->
+  <a href="{% url 'campaign_list' %}" class="stat-card" style="text-decoration: none;">
+    <div class="stat-info">
+      <div class="stat-value">{{ total_campaigns }}</div>
+      <div class="stat-label">Total Campaigns</div>
+    </div>
+    <div class="stat-icon blue"><i data-lucide="megaphone"></i></div>
+  </a>
+
+  <div class="stat-card">
+    <div class="stat-info">
+      <div class="stat-value" style="color: var(--success);">{{ active_campaigns }}</div>
+      <div class="stat-label">Active Campaigns</div>
+    </div>
+    <div class="stat-icon green"><i data-lucide="play-circle"></i></div>
+  </div>
+
+  <a href="{% url 'customer_list' %}" class="stat-card" style="text-decoration: none;">
+    <div class="stat-info">
+      <div class="stat-value">{{ total_customers }}</div>
+      <div class="stat-label">Total Customers</div>
+    </div>
+    <div class="stat-icon cyan"><i data-lucide="users"></i></div>
+  </a>
+
+  <!-- Row 2: Calls & Follow-ups -->
+  <a href="{% url 'call_list' %}" class="stat-card" style="text-decoration: none;">
+    <div class="stat-info">
+      <div class="stat-value" style="color: var(--success);">{{ calls_completed }}</div>
+      <div class="stat-label">Calls Completed</div>
+    </div>
+    <div class="stat-icon green"><i data-lucide="phone-call"></i></div>
+  </a>
+
+  <div class="stat-card">
+    <div class="stat-info">
+      <div class="stat-value" style="color: var(--warning);">{{ calls_pending }}</div>
+      <div class="stat-label">Calls Pending</div>
+    </div>
+    <div class="stat-icon yellow"><i data-lucide="clock"></i></div>
+  </div>
+
+  <a href="{% url 'followup_list' %}" class="stat-card" style="text-decoration: none;">
+    <div class="stat-info">
+      <div class="stat-value" style="color: var(--danger);">{{ followups_due }}</div>
+      <div class="stat-label">Follow-ups Due</div>
+    </div>
+    <div class="stat-icon red"><i data-lucide="calendar-clock"></i></div>
+  </a>
+</div>
+
+<!-- Action Required Section -->
+<div class="card" style="margin-bottom: 1.75rem;">
+  <div class="card-header" style="padding-bottom: 0.75rem;">
+    <div>
+      <h3 class="card-title" style="display: flex; align-items: center; gap: 0.5rem;">
+        <i data-lucide="alert-circle" style="color: var(--warning); width: 18px; height: 18px;"></i> Action Required
+      </h3>
+      <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">Operational bottlenecks requiring immediate administrative attention</p>
+    </div>
+  </div>
+
+  {% if action_required_items %}
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; padding: 0.5rem 0;">
+      {% for item in action_required_items %}
+        <a href="{{ item.url }}" class="action-required-card">
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <i data-lucide="{{ item.icon }}" style="width: 18px; height: 18px; color: var(--text-muted);"></i>
+            <span style="font-weight: 600; font-size: 0.9rem;">{{ item.label }}</span>
+          </div>
+          <span class="badge {{ item.badge_class }}" style="font-size: 0.85rem; font-weight: 700; padding: 0.25rem 0.6rem;">
+            {{ item.count }}
+          </span>
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div style="display: flex; align-items: center; gap: 0.6rem; color: var(--success); padding: 0.5rem 0; font-size: 0.9rem; font-weight: 600;">
+      <i data-lucide="check-circle" style="width: 20px; height: 20px;"></i> Everything is up to date.
+    </div>
+  {% endif %}
+</div>
+
+<!-- Active Campaign Progress Section -->
+<div class="card" style="margin-bottom: 1.75rem;">
+  <div class="card-header">
+    <div>
+      <h3 class="card-title">Active Campaign Progress</h3>
+      <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">Real-time execution metrics and call completion rates across active campaigns</p>
+    </div>
+    <a href="{% url 'campaign_list' %}" style="font-size: 0.8rem; font-weight: 600;">View All Campaigns</a>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+    {% for cp in campaign_progress_list %}
+      <div style="padding: 1rem; border: 1px solid var(--border-color); border-radius: var(--radius-sm); background-color: var(--bg-primary);">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.4rem;">
+          <div>
+            <a href="{% url 'campaign_detail' cp.campaign.pk %}" style="font-weight: 700; font-size: 1rem; text-decoration: none; color: var(--text-main);">
+              {{ cp.campaign.name }}
+            </a>
+            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">
+              {{ cp.campaign.start_date|date:"M d, Y" }} &ndash; {{ cp.campaign.end_date|date:"M d, Y" }} &bull; {{ cp.assigned_count }} assigned customers
+            </div>
+          </div>
+          <div style="text-align: right;">
+            <span class="badge badge-success">{{ cp.campaign.status }}</span>
+            <div style="font-weight: 700; font-size: 1rem; color: var(--primary); margin-top: 3px;">
+              {{ cp.progress_pct }}%
+            </div>
+          </div>
+        </div>
+
+        <div class="campaign-progress-bar-wrap">
+          <div class="campaign-progress-bar-fill" style="width: {{ cp.progress_pct }}%;"></div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-muted); margin-top: 0.35rem;">
+          <span><strong>{{ cp.completed_count }}</strong> / {{ cp.target_calls }} calls completed</span>
+          <span><strong style="color: var(--warning);">{{ cp.pending_count }}</strong> pending</span>
+        </div>
+      </div>
+    {% empty %}
+      <div class="empty-state" style="padding: 2rem 1rem;">
+        <div class="empty-state-icon"><i data-lucide="megaphone"></i></div>
+        <h4 class="empty-state-title">No Active Campaigns</h4>
+        <p class="empty-state-desc">Launch or activate a campaign to track call progress.</p>
+        <a href="{% url 'campaign_create' %}" class="btn btn-primary btn-sm" style="margin-top: 0.75rem;">
+          <i data-lucide="plus-circle"></i> Create Campaign
+        </a>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+
+
+<!-- Charts Section -->
+<div class="dashboard-charts-grid">
+  <!-- Chart 1: Call Status Distribution -->
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Call Outcomes Distribution</h3>
+    </div>
+    <div style="height: 260px; position: relative;">
+      <canvas id="outcomesChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Chart 2: Telecaller Performance -->
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Tele-caller Performance</h3>
+    </div>
+    <div style="height: 260px; position: relative;">
+      <canvas id="performanceChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Activity & Follow-ups Grid -->
+<div class="dashboard-activity-grid">
+  <!-- Recent Calls -->
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Latest Call Logs</h3>
+      <a href="{% url 'call_list' %}" style="font-size: 0.8rem;">View All</a>
+    </div>
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Customer</th>
+            <th>Tele-caller</th>
+            <th>Status</th>
+            <th>Duration</th>
+            <th>Time</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for call in recent_calls %}
+          <tr>
+            <td><strong>{{ call.customer.name }}</strong></td>
+            <td>{{ call.telecaller.get_full_name|default:call.telecaller.username }}</td>
+            <td>
+              <span class="badge {% if call.call_status == 'Completed' %}badge-success{% elif call.call_status == 'No Answer' %}badge-warning{% else %}badge-info{% endif %}">
+                {{ call.call_status }}
+              </span>
+            </td>
+            <td>{{ call.duration }}s</td>
+            <td style="font-size: 0.75rem; color: var(--text-muted);">{{ call.created_at|timesince }} ago</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">No recent call activity.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Pending Follow-ups -->
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Pending Follow-ups</h3>
+      <a href="{% url 'followup_list' %}" style="font-size: 0.8rem;">View All</a>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 0.85rem;">
+      {% for fu in pending_followups %}
+        <div style="padding: 0.75rem; border: 1px solid var(--border-color); border-radius: var(--radius-sm); background-color: var(--bg-primary);">
+          <div style="font-weight: 600; font-size: 0.85rem;">{{ fu.customer.name }}</div>
+          <div style="font-size: 0.75rem; color: var(--text-muted);">Due: {{ fu.scheduled_date }} @ {{ fu.scheduled_time }}</div>
+          <div style="font-size: 0.75rem; color: var(--primary); margin-top: 2px;">Assigned to: {{ fu.assigned_to.get_full_name|default:fu.assigned_to.username }}</div>
+        </div>
+      {% empty %}
+        <div style="color: var(--text-muted); font-size: 0.85rem; text-align: center; padding: 1.5rem;">No pending follow-ups.</div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    // Outcomes Donut Chart
+    const ctxOutcomes = document.getElementById('outcomesChart');
+    if (ctxOutcomes) {
+      new Chart(ctxOutcomes, {
+        type: 'doughnut',
+        data: {
+          labels: ['Completed', 'No Answer', 'Unreachable', 'Busy', 'Follow-up Req'],
+          datasets: [{
+            data: [
+              {{ chart_completed|default:0 }},
+              {{ chart_no_answer|default:0 }},
+              {{ chart_unreachable|default:0 }},
+              {{ chart_busy|default:0 }},
+              {{ chart_followup|default:0 }}
+            ],
+            backgroundColor: ['#10b981', '#f59e0b', '#ef4444', '#64748b', '#2563eb']
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'right' } }
+        }
+      });
+    }
+
+    // Performance Bar Chart
+    const ctxPerf = document.getElementById('performanceChart');
+    if (ctxPerf) {
+      new Chart(ctxPerf, {
+        type: 'bar',
+        data: {
+          labels: [{% for tc in telecaller_stats %}"{{ tc.username }}",{% endfor %}],
+          datasets: [{
+            label: 'Completed Calls',
+            data: [{% for tc in telecaller_stats %}{{ tc.completed }},{% endfor %}],
+            backgroundColor: '#2563eb',
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: { y: { beginAtZero: true } }
+        }
+      });
+    }
+  });
+</script>
+{% endblock %}

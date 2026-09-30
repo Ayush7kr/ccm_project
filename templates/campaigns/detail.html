@@ -1,0 +1,363 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ campaign.name }} — Campaign Detail — CCM{% endblock %}
+{% block page_title %}{{ campaign.name }}{% endblock %}
+
+{% block content %}
+<!-- Header Bar -->
+<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+  <div>
+    <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.25rem;">
+      <h2 style="font-size: 1.4rem; font-weight: 700;">{{ campaign.name }}</h2>
+      {% if campaign.status == 'Active' %}
+        <span class="badge badge-success">Active</span>
+      {% elif campaign.status == 'Paused' %}
+        <span class="badge badge-warning">Paused</span>
+      {% elif campaign.status == 'Completed' %}
+        <span class="badge badge-info">Completed</span>
+      {% else %}
+        <span class="badge badge-secondary">{{ campaign.status }}</span>
+      {% endif %}
+    </div>
+    <p style="font-size: 0.85rem; color: var(--text-muted);">
+      Type: {{ campaign.campaign_type }} &bull; Dates: {{ campaign.start_date }} to {{ campaign.end_date }}
+    </p>
+  </div>
+
+  <div style="display: flex; gap: 0.75rem;">
+    {% if user.is_admin_user %}
+      <a href="{% url 'questionnaire_builder' campaign.pk %}" class="btn btn-primary">
+        <i data-lucide="help-circle"></i> Questionnaire Builder
+      </a>
+      <a href="{% url 'campaign_edit' campaign.pk %}" class="btn btn-outline">
+        <i data-lucide="edit-3"></i> Edit
+      </a>
+      <form action="{% url 'campaign_status_toggle' campaign.pk %}" method="POST" style="margin:0;">
+        {% csrf_token %}
+        {% if campaign.status == 'Active' %}
+          <input type="hidden" name="status" value="Paused">
+          <button type="submit" class="btn btn-secondary"><i data-lucide="pause"></i> Pause</button>
+        {% else %}
+          <input type="hidden" name="status" value="Active">
+          <button type="submit" class="btn btn-secondary"><i data-lucide="play"></i> Resume</button>
+        {% endif %}
+      </form>
+    {% endif %}
+    <a href="{% url 'campaign_list' %}" class="btn btn-secondary">
+      <i data-lucide="arrow-left"></i> List
+    </a>
+  </div>
+</div>
+
+<!-- Progress Bar -->
+<div class="card" style="padding: 1.25rem; margin-bottom: 1.5rem;">
+  <div style="display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.5rem;">
+    <span>Campaign Call Completion Progress</span>
+    <span>{{ completed_calls }} / {{ campaign.target_calls }} Calls ({{ progress_pct }}%)</span>
+  </div>
+  <div style="height: 10px; background-color: var(--divider-color); border-radius: 5px; overflow: hidden;">
+    <div style="width: {{ progress_pct }}%; height: 100%; background: linear-gradient(90deg, var(--primary), var(--success));"></div>
+  </div>
+</div>
+
+<!-- KPI Cards (Key Metrics) -->
+<div class="kpi-grid" style="margin-bottom: 1.5rem;">
+  <div class="stat-card">
+    <div class="stat-info">
+      <div class="stat-value">{{ total_customers }}</div>
+      <div class="stat-label">Total Customers</div>
+    </div>
+    <div class="stat-icon blue"><i data-lucide="users"></i></div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-info">
+      <div class="stat-value">{{ assigned_count }}</div>
+      <div class="stat-label">Assigned</div>
+    </div>
+    <div class="stat-icon yellow"><i data-lucide="user-check"></i></div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-info">
+      <div class="stat-value" style="color: var(--success);">{{ completed_calls }}</div>
+      <div class="stat-label">Completed</div>
+    </div>
+    <div class="stat-icon green"><i data-lucide="phone-call"></i></div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-info">
+      <div class="stat-value" style="color: var(--warning);">{{ pending_calls }}</div>
+      <div class="stat-label">Pending</div>
+    </div>
+    <div class="stat-icon yellow"><i data-lucide="clock"></i></div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-info">
+      <div class="stat-value" style="color: var(--info);">{{ followups_count }}</div>
+      <div class="stat-label">Follow-ups</div>
+    </div>
+    <div class="stat-icon cyan"><i data-lucide="calendar"></i></div>
+  </div>
+</div>
+
+<!-- Tabs Navigation -->
+<div style="display: flex; border-bottom: 1px solid var(--border-color); margin-bottom: 1.5rem; gap: 1.5rem; overflow-x: auto;">
+  <a href="?tab=overview" style="padding: 0.75rem 0.25rem; font-weight: 600; text-decoration: none; border-bottom: 2px solid {% if active_tab == 'overview' %}var(--primary){% else %}transparent{% endif %}; color: {% if active_tab == 'overview' %}var(--primary){% else %}var(--text-muted){% endif %}; white-space: nowrap;">
+    Overview
+  </a>
+  <a href="?tab=customers" style="padding: 0.75rem 0.25rem; font-weight: 600; text-decoration: none; border-bottom: 2px solid {% if active_tab == 'customers' %}var(--primary){% else %}transparent{% endif %}; color: {% if active_tab == 'customers' %}var(--primary){% else %}var(--text-muted){% endif %}; white-space: nowrap;">
+    Enrolled Customers ({{ total_customers }})
+  </a>
+  <a href="?tab=questionnaire" style="padding: 0.75rem 0.25rem; font-weight: 600; text-decoration: none; border-bottom: 2px solid {% if active_tab == 'questionnaire' %}var(--primary){% else %}transparent{% endif %}; color: {% if active_tab == 'questionnaire' %}var(--primary){% else %}var(--text-muted){% endif %}; white-space: nowrap;">
+    Questionnaire {% if questionnaire %}({{ questions|length }}){% endif %}
+  </a>
+  <a href="?tab=calls" style="padding: 0.75rem 0.25rem; font-weight: 600; text-decoration: none; border-bottom: 2px solid {% if active_tab == 'calls' %}var(--primary){% else %}transparent{% endif %}; color: {% if active_tab == 'calls' %}var(--primary){% else %}var(--text-muted){% endif %}; white-space: nowrap;">
+    Call Records ({{ call_records|length }})
+  </a>
+  {% if user.is_admin_user %}
+  <a href="?tab=analytics" style="padding: 0.75rem 0.25rem; font-weight: 600; text-decoration: none; border-bottom: 2px solid {% if active_tab == 'analytics' %}var(--primary){% else %}transparent{% endif %}; color: {% if active_tab == 'analytics' %}var(--primary){% else %}var(--text-muted){% endif %}; white-space: nowrap;">
+    Analytics
+  </a>
+  {% endif %}
+</div>
+
+
+<!-- Tab Contents -->
+{% if active_tab == 'overview' %}
+  <div class="card">
+    <h3 class="card-title" style="margin-bottom: 0.75rem;">Description & Objectives</h3>
+    <p style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.6;">
+      {{ campaign.description|default:"No description provided." }}
+    </p>
+  </div>
+{% elif active_tab == 'customers' %}
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Enrolled Customers</h3>
+      {% if user.is_admin_user %}
+      <a href="{% url 'customer_assign' %}" class="btn btn-primary btn-sm">
+        <i data-lucide="user-plus"></i> Assign Customers
+      </a>
+      {% endif %}
+    </div>
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Customer</th>
+            <th>Phone / Email</th>
+            <th>Assigned Tele-caller</th>
+            <th>Call Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for link in assignments %}
+          <tr>
+            <td><strong>{{ link.customer.name }}</strong><br><span style="font-size: 0.75rem; color: var(--text-muted);">{{ link.customer.company }}</span></td>
+            <td>{{ link.customer.phone }}<br><span style="font-size: 0.75rem; color: var(--text-muted);">{{ link.customer.email }}</span></td>
+            <td>
+              {% if link.assigned_telecaller %}
+                <span style="font-weight: 600;">{{ link.assigned_telecaller.get_full_name|default:link.assigned_telecaller.username }}</span>
+              {% else %}
+                <span class="badge badge-secondary">Unassigned</span>
+              {% endif %}
+            </td>
+            <td>
+              <span class="badge {% if link.assignment_status == 'Completed' %}badge-success{% elif link.assignment_status == 'In Progress' %}badge-warning{% else %}badge-secondary{% endif %}">
+                {{ link.assignment_status }}
+              </span>
+            </td>
+            <td>
+              <a href="{% url 'record_call' link.pk %}" class="btn btn-primary btn-sm">
+                <i data-lucide="phone"></i> Call Console
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">No customers enrolled in this campaign yet.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% elif active_tab == 'questionnaire' %}
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Campaign Questionnaire</h3>
+      {% if user.is_admin_user %}
+      <a href="{% url 'questionnaire_builder' campaign.pk %}" class="btn btn-primary btn-sm">
+        <i data-lucide="edit"></i> Edit Questionnaire
+      </a>
+      {% endif %}
+    </div>
+
+    {% if questionnaire %}
+      <div style="margin-bottom: 1.25rem;">
+        <h4 style="font-size: 1.1rem; font-weight: 600;">{{ questionnaire.title }}</h4>
+        <p style="font-size: 0.85rem; color: var(--text-muted);">{{ questionnaire.description }}</p>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 1rem;">
+        {% for q in questions %}
+          <div style="padding: 1rem; border: 1px solid var(--border-color); border-radius: var(--radius-sm); background-color: var(--bg-primary);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+              <span style="font-weight: 600; font-size: 0.9rem;">Q{{ forloop.counter }}. {{ q.question_text }}</span>
+              <span class="badge badge-info">{{ q.get_question_type_display }}</span>
+            </div>
+            {% if q.options %}
+              <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">
+                Options: {{ q.options|join:", " }}
+              </div>
+            {% endif %}
+          </div>
+        {% empty %}
+          <div style="text-align: center; color: var(--text-muted); padding: 1.5rem;">No questions added to questionnaire.</div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state">
+        <div class="empty-state-icon"><i data-lucide="help-circle"></i></div>
+        <h4 class="empty-state-title">No Questionnaire Configured</h4>
+        <p class="empty-state-desc">Build a questionnaire to capture structured feedback from customer calls.</p>
+        {% if user.is_admin_user %}
+        <a href="{% url 'questionnaire_builder' campaign.pk %}" class="btn btn-primary">
+          <i data-lucide="plus-circle"></i> Build Questionnaire
+        </a>
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
+{% elif active_tab == 'calls' %}
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Call History</h3>
+    </div>
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Customer</th>
+            <th>Tele-caller</th>
+            <th>Call Status</th>
+            <th>Duration</th>
+            <th>Date & Time</th>
+            <th>Comments</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for call in call_records %}
+          <tr>
+            <td><strong>{{ call.customer.name }}</strong></td>
+            <td>{{ call.telecaller.get_full_name|default:call.telecaller.username }}</td>
+            <td>
+              <span class="badge {% if call.call_status == 'Completed' %}badge-success{% elif call.call_status == 'No Answer' %}badge-warning{% else %}badge-info{% endif %}">
+                {{ call.call_status }}
+              </span>
+            </td>
+            <td>{{ call.duration }}s</td>
+            <td style="font-size: 0.8rem; color: var(--text-muted);">{{ call.created_at|date:"M d, H:i" }}</td>
+            <td style="font-size: 0.8rem;">{{ call.comments|truncatewords:8 }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">No calls recorded for this campaign yet.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% elif active_tab == 'analytics' %}
+  <!-- Campaign Analytics View -->
+  <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+    <!-- Outcome Distribution Cards -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Call Outcomes Breakdown</h3>
+        <span style="font-size: 0.8rem; color: var(--text-muted);">Avg. Completed Call Duration: <strong>{{ avg_call_duration }}s</strong></span>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; padding: 0.5rem 0;">
+        <div style="padding: 1rem; border: 1px solid var(--border-color); border-radius: var(--radius-sm); text-align: center; background-color: var(--success-light);">
+          <div style="font-size: 1.5rem; font-weight: 700; color: var(--success);">{{ status_counts.Completed }}</div>
+          <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Completed</div>
+        </div>
+        <div style="padding: 1rem; border: 1px solid var(--border-color); border-radius: var(--radius-sm); text-align: center; background-color: var(--warning-light);">
+          <div style="font-size: 1.5rem; font-weight: 700; color: var(--warning);">{{ status_counts.No_Answer|default:0 }}</div>
+          <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">No Answer</div>
+        </div>
+        <div style="padding: 1rem; border: 1px solid var(--border-color); border-radius: var(--radius-sm); text-align: center; background-color: var(--danger-light);">
+          <div style="font-size: 1.5rem; font-weight: 700; color: var(--danger);">{{ status_counts.Unreachable|default:0 }}</div>
+          <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Unreachable</div>
+        </div>
+        <div style="padding: 1rem; border: 1px solid var(--border-color); border-radius: var(--radius-sm); text-align: center; background-color: var(--bg-primary);">
+          <div style="font-size: 1.5rem; font-weight: 700; color: var(--text-main);">{{ status_counts.Busy|default:0 }}</div>
+          <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Busy</div>
+        </div>
+        <div style="padding: 1rem; border: 1px solid var(--border-color); border-radius: var(--radius-sm); text-align: center; background-color: var(--primary-light);">
+          <div style="font-size: 1.5rem; font-weight: 700; color: var(--primary);">{{ status_counts.Follow_up_Required|default:0 }}</div>
+          <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Follow-up Req</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Questionnaire Responses Summary -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Questionnaire Response Analytics</h3>
+        <span style="font-size: 0.8rem; color: var(--text-muted);">{{ question_analytics|length }} Survey Questions</span>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+        {% for qa in question_analytics %}
+          <div style="padding: 1rem; border: 1px solid var(--border-color); border-radius: var(--radius-sm); background-color: var(--bg-primary);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+              <strong style="font-size: 0.95rem;">Q{{ forloop.counter }}. {{ qa.question.question_text }}</strong>
+              <span class="badge badge-info">{{ qa.question.get_question_type_display }} &bull; {{ qa.total_responses }} responses</span>
+            </div>
+
+            {% if qa.avg_rating %}
+              <div style="margin-top: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                <span style="font-weight: 600; font-size: 0.85rem;">Average Rating:</span>
+                <span style="font-size: 1.2rem; font-weight: 800; color: #f59e0b;">{{ qa.avg_rating }} / 5.0 ★</span>
+              </div>
+            {% endif %}
+
+            {% if qa.counts %}
+              <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem;">
+                {% for opt, count in qa.counts.items %}
+                  <div style="padding: 0.35rem 0.75rem; background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-size: 0.85rem;">
+                    <strong>{{ opt }}</strong>: {{ count }}
+                  </div>
+                {% endfor %}
+              </div>
+            {% endif %}
+
+            {% if qa.text_responses %}
+              <div style="margin-top: 0.5rem;">
+                <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.25rem;">Recent Qualitative Feedback:</div>
+                <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+                  {% for t in qa.text_responses %}
+                    <div style="font-size: 0.8rem; color: var(--text-main); font-style: italic; background-color: var(--bg-secondary); padding: 0.35rem 0.6rem; border-radius: 4px;">
+                      "{{ t }}"
+                    </div>
+                  {% endfor %}
+                </div>
+              </div>
+            {% endif %}
+          </div>
+        {% empty %}
+          <div style="text-align: center; color: var(--text-muted); padding: 1.5rem;">No questionnaire configured for this campaign.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+{% endif %}
+{% endblock %}
+

@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if is_edit %}Edit Customer — {{ customer.name }}{% else %}Add Customer{% endif %} — CCM{% endblock %}
+{% block page_title %}{% if is_edit %}Edit Customer Profile{% else %}Create New Customer{% endif %}{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 650px; margin: 0 auto;">
+  <div class="card-header">
+    <h3 class="card-title">{% if is_edit %}Edit Contact Information{% else %}Customer Details{% endif %}</h3>
+    <a href="{% url 'customer_list' %}" class="btn btn-outline btn-sm">
+      <i data-lucide="arrow-left"></i> Back to Directory
+    </a>
+  </div>
+
+  <form method="POST" action="{% if is_edit %}{% url 'customer_edit' customer.pk %}{% else %}{% url 'customer_create' %}{% endif %}">
+    {% csrf_token %}
+
+    <div class="responsive-grid-1-1">
+      <div class="form-group">
+        <label for="name">Customer Full Name *</label>
+        <input type="text" id="name" name="name" class="form-control" value="{{ form_data.name|default:'' }}" required placeholder="e.g. Robert Johnson">
+        {% if errors.name %}<div style="color: var(--danger); font-size: 0.75rem; margin-top: 0.2rem;">{{ errors.name }}</div>{% endif %}
+      </div>
+
+      <div class="form-group">
+        <label for="phone">Phone Number *</label>
+        <input type="text" id="phone" name="phone" class="form-control" value="{{ form_data.phone|default:'' }}" required placeholder="+1 555-0188">
+        {% if errors.phone %}<div style="color: var(--danger); font-size: 0.75rem; margin-top: 0.2rem;">{{ errors.phone }}</div>{% endif %}
+      </div>
+    </div>
+
+    <div class="responsive-grid-1-1">
+      <div class="form-group">
+        <label for="email">Email Address</label>
+        <input type="email" id="email" name="email" class="form-control" value="{{ form_data.email|default:'' }}" placeholder="robert@example.com">
+      </div>
+
+      <div class="form-group">
+        <label for="company">Company / Organization</label>
+        <input type="text" id="company" name="company" class="form-control" value="{{ form_data.company|default:'' }}" placeholder="Johnson Enterprises">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="address">Street Address</label>
+      <input type="text" id="address" name="address" class="form-control" value="{{ form_data.address|default:'' }}" placeholder="100 Main Street, Suite 400">
+    </div>
+
+    <div class="responsive-grid-1-1">
+      <div class="form-group">
+        <label for="city">City</label>
+        <input type="text" id="city" name="city" class="form-control" value="{{ form_data.city|default:'' }}" placeholder="New York">
+      </div>
+
+      <div class="form-group">
+        <label for="state">State / Region</label>
+        <input type="text" id="state" name="state" class="form-control" value="{{ form_data.state|default:'' }}" placeholder="NY">
+      </div>
+    </div>
+
+    <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem;">
+      <a href="{% url 'customer_list' %}" class="btn btn-secondary">Cancel</a>
+      <button type="submit" class="btn btn-primary">
+        <i data-lucide="save"></i> {% if is_edit %}Update Customer{% else %}Save Customer{% endif %}
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}

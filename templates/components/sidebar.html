@@ -1,0 +1,85 @@
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <div class="brand-icon">CCM</div>
+    <div class="brand-title">
+      CallManager
+      <span>SaaS Platform</span>
+    </div>
+  </div>
+
+  <div class="sidebar-menu">
+    <div class="menu-category">Main Menu</div>
+    
+    <a href="{% url 'dashboard' %}" class="menu-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+      <i data-lucide="layout-dashboard"></i>
+      Dashboard
+    </a>
+
+    <a href="{% url 'campaign_list' %}" class="menu-item {% if 'campaign' in request.path %}active{% endif %}">
+      <i data-lucide="megaphone"></i>
+      {% if user.is_admin_user %}Campaigns{% else %}My Campaigns{% endif %}
+    </a>
+
+    <a href="{% url 'customer_list' %}" class="menu-item {% if 'customer' in request.path %}active{% endif %}">
+      <i data-lucide="users"></i>
+      {% if user.is_admin_user %}Customers{% else %}My Customers{% endif %}
+    </a>
+
+    {% if user.is_admin_user %}
+    <a href="{% url 'telecaller_list' %}" class="menu-item {% if 'tele-caller' in request.path %}active{% endif %}">
+      <i data-lucide="user-check"></i>
+      Tele-callers
+    </a>
+    {% endif %}
+
+    <a href="{% url 'call_list' %}" class="menu-item {% if 'calls' in request.path %}active{% endif %}">
+      <i data-lucide="phone-call"></i>
+      {% if user.is_admin_user %}Call Records{% else %}My Calls{% endif %}
+    </a>
+
+    <a href="{% url 'followup_list' %}" class="menu-item {% if 'followups' in request.path %}active{% endif %}">
+      <i data-lucide="calendar-clock"></i>
+      {% if user.is_admin_user %}Follow-ups{% else %}My Follow-ups{% endif %}
+    </a>
+
+    {% if user.is_admin_user %}
+    <div class="menu-category">Insights & Management</div>
+
+    <a href="{% url 'analytics' %}" class="menu-item {% if request.resolver_match.url_name == 'analytics' %}active{% endif %}">
+      <i data-lucide="line-chart"></i>
+      Analytics
+    </a>
+
+    <a href="{% url 'reports' %}" class="menu-item {% if request.resolver_match.url_name == 'reports' %}active{% endif %}">
+      <i data-lucide="file-spreadsheet"></i>
+      Reports
+    </a>
+    {% endif %}
+
+    <div class="menu-category">System</div>
+    
+    <a href="{% url 'notification_list' %}" class="menu-item {% if 'notifications' in request.path %}active{% endif %}">
+      <i data-lucide="bell"></i>
+      Notifications
+      {% if unread_notification_count > 0 %}
+        <span class="badge badge-danger" style="margin-left: auto;">{{ unread_notification_count }}</span>
+      {% endif %}
+    </a>
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="user-profile-badge">
+      <div class="avatar">{{ user.username|slice:":1" }}</div>
+      <div class="user-info">
+        <div class="user-name">{{ user.get_full_name|default:user.username }}</div>
+        <div class="user-role">{{ user.get_role_display }}</div>
+      </div>
+      <form action="{% url 'logout' %}" method="POST" style="margin: 0;">
+        {% csrf_token %}
+        <button type="submit" title="Logout" style="background: none; border: none; color: #94a3b8; cursor: pointer; padding: 4px; display: flex; align-items: center;">
+          <i data-lucide="log-out" style="width: 18px; height: 18px;"></i>
+        </button>
+      </form>
+    </div>
+  </div>
+</aside>

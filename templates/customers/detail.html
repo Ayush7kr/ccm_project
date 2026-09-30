@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+
+{% block title %}Customer Profile — {{ customer.name }} — CCM{% endblock %}
+{% block page_title %}Customer Profile{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+  <div>
+    <h2 style="font-size: 1.4rem; font-weight: 700;">{{ customer.name }}</h2>
+    <p style="font-size: 0.85rem; color: var(--text-muted);">
+      Phone: <strong>{{ customer.phone }}</strong> &bull; Email: {{ customer.email|default:"No email" }} &bull; Company: {{ customer.company|default:"N/A" }}
+    </p>
+  </div>
+
+  <div style="display: flex; gap: 0.75rem;">
+    {% if active_assignment %}
+    <a href="{% url 'record_call' active_assignment.pk %}" class="btn btn-primary" style="font-weight: 700;">
+      <i data-lucide="phone"></i> Call Console
+    </a>
+    {% endif %}
+    {% if user.is_admin_user %}
+    <a href="{% url 'customer_edit' customer.pk %}" class="btn btn-outline">
+      <i data-lucide="edit-3"></i> Edit
+    </a>
+    {% endif %}
+    <a href="{% url 'customer_list' %}" class="btn btn-secondary">
+      <i data-lucide="arrow-left"></i> Directory
+    </a>
+  </div>
+</div>
+
+{% if active_assignment %}
+<div class="card" style="background: linear-gradient(135deg, var(--bg-secondary), var(--primary-light)); border: 1px solid var(--border-color); padding: 1.25rem; margin-bottom: 1.5rem;">
+  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+    <div>
+      <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+        <span class="badge badge-info">{{ active_assignment.campaign.name }}</span>
+        <span class="badge {% if active_assignment.assignment_status == 'In Progress' %}badge-warning{% else %}badge-secondary{% endif %}">
+          {{ active_assignment.assignment_status }}
+        </span>
+      </div>
+      <h3 style="font-size: 1.1rem; font-weight: 700; margin: 0; color: var(--text-main);">Active Campaign Calling Assignment</h3>
+      <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">Launch the live call console to start timer, view the questionnaire script, and log outcomes in 1-click.</p>
+    </div>
+    <a href="{% url 'record_call' active_assignment.pk %}" class="btn btn-primary" style="padding: 0.65rem 1.4rem; font-weight: 700;">
+      <i data-lucide="phone-call"></i> Start Call Console
+    </a>
+  </div>
+</div>
+{% endif %}
+
+<div class="responsive-grid-2-1">
+
+  <!-- Call History & Questionnaire Responses -->
+  <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Call History & Timeline</h3>
+      </div>
+      
+      <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+        {% for call in call_records %}
+          <div style="border-left: 3px solid var(--primary); padding-left: 1rem; position: relative;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+              <span style="font-weight: 600; font-size: 0.9rem;">Campaign: {{ call.campaign.name }}</span>
+              <span class="badge {% if call.call_status == 'Completed' %}badge-success{% elif call.call_status == 'No Answer' %}badge-warning{% else %}badge-info{% endif %}">
+                {{ call.call_status }}
+              </span>
+            </div>
+            
+            <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">
+              Caller: {{ call.telecaller.get_full_name|default:call.telecaller.username }} &bull; Duration: {{ call.duration }}s &bull; Date: {{ call.created_at|date:"M d, Y H:i" }}
+            </div>
+
+            {% if call.comments %}
+              <div style="font-size: 0.85rem; background-color: var(--bg-primary); padding: 0.6rem; border-radius: var(--radius-sm); margin-bottom: 0.5rem;">
+                <strong>Caller Comments:</strong> {{ call.comments }}
+              </div>
+            {% endif %}
+
+            <!-- Questionnaire Answers -->
+            {% if call.responses.all %}
+              <div style="font-size: 0.8rem; margin-top: 0.5rem; background-color: var(--primary-light); padding: 0.75rem; border-radius: var(--radius-sm);">
+                <strong style="display: block; margin-bottom: 0.35rem;">Questionnaire Responses:</strong>
+                {% for resp in call.responses.all %}
+                  <div style="margin-bottom: 0.25rem;">
+                    <span style="font-weight: 600;">{{ resp.question.question_text }}:</span> 
+                    {% if resp.rating %}
+                      <span style="color: var(--warning); font-weight: 700;">{{ resp.rating }} / 5 Stars</span>
+                    {% elif resp.selected_options %}
+                      {{ resp.selected_options|join:", " }}
+                    {% else %}
+                      {{ resp.response_text|default:"N/A" }}
+                    {% endif %}
+                  </div>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+        {% empty %}
+          <div style="text-align: center; color: var(--text-muted); padding: 1.5rem;">No call records found for this customer.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Sidebar: Details & Enrollments -->
+  <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+    <div class="card">
+      <h3 class="card-title" style="margin-bottom: 1rem;">Contact Info</h3>
+      <div style="display: flex; flex-direction: column; gap: 0.6rem; font-size: 0.85rem;">
+        <div><span style="color: var(--text-muted);">Phone:</span> <strong>{{ customer.phone }}</strong></div>
+        <div><span style="color: var(--text-muted);">Email:</span> {{ customer.email|default:"N/A" }}</div>
+        <div><span style="color: var(--text-muted);">Company:</span> {{ customer.company|default:"N/A" }}</div>
+        <div><span style="color: var(--text-muted);">Location:</span> {{ customer.city }}{% if customer.state %}, {{ customer.state }}{% endif %}</div>
+        <div><span style="color: var(--text-muted);">Source:</span> {{ customer.source }}</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 class="card-title" style="margin-bottom: 1rem;">Campaign Enrollments</h3>
+      {% for link in campaign_links %}
+        <div style="padding: 0.6rem 0; border-bottom: 1px solid var(--divider-color); font-size: 0.85rem;">
+          <a href="{% url 'campaign_detail' link.campaign.pk %}" style="font-weight: 600;">{{ link.campaign.name }}</a>
+          <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">
+            Caller: {{ link.assigned_telecaller.get_full_name|default:link.assigned_telecaller.username|default:"Unassigned" }}
+          </div>
+          <div style="margin-top: 4px;">
+            <span class="badge {% if link.assignment_status == 'Completed' %}badge-success{% else %}badge-warning{% endif %}">
+              {{ link.assignment_status }}
+            </span>
+          </div>
+        </div>
+      {% empty %}
+        <div style="color: var(--text-muted); font-size: 0.85rem;">Not enrolled in any campaign.</div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

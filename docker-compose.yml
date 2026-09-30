@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: ccm_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ccm_db
+      POSTGRES_USER: ccm_user
+      POSTGRES_PASSWORD: ccm_secure_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ccm_user -d ccm_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build: .
+    container_name: ccm_web
+    restart: unless-stopped
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py collectstatic --noinput &&
+             gunicorn --bind 0.0.0.0:8000 --workers 3 --access-logfile - --error-logfile - config.wsgi:application"
+    volumes:
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=False
+      - SECRET_KEY=prod-insecure-docker-secret-key-change-in-production
+      - ALLOWED_HOSTS=localhost,127.0.0.1,web
+      - DATABASE_URL=postgresql://ccm_user:ccm_secure_password@db:5432/ccm_db
+      - LOG_LEVEL=INFO
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  static_volume:
+  media_volume:

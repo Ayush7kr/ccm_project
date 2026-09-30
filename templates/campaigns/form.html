@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if is_edit %}Edit Campaign — {{ campaign.name }}{% else %}Create Campaign{% endif %} — CCM{% endblock %}
+{% block page_title %}{% if is_edit %}Edit Campaign{% else %}Create New Campaign{% endif %}{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 700px; margin: 0 auto;">
+  <div class="card-header">
+    <h3 class="card-title">{% if is_edit %}Edit Campaign Configuration{% else %}Campaign Metadata & Timeline{% endif %}</h3>
+    <a href="{% url 'campaign_list' %}" class="btn btn-outline btn-sm">
+      <i data-lucide="arrow-left"></i> Back to Campaigns
+    </a>
+  </div>
+
+  <!-- RAW HTML FORM (NO DJANGO FORMS) -->
+  <form method="POST" action="{% if is_edit %}{% url 'campaign_edit' campaign.pk %}{% else %}{% url 'campaign_create' %}{% endif %}">
+    {% csrf_token %}
+
+    <div class="form-group">
+      <label for="name">Campaign Name *</label>
+      <input type="text" id="name" name="name" class="form-control" value="{{ form_data.name|default:'' }}" required placeholder="e.g. Q3 Billing Software Outreach">
+      {% if errors.name %}<div style="color: var(--danger); font-size: 0.75rem; margin-top: 0.2rem;">{{ errors.name }}</div>{% endif %}
+    </div>
+
+    <div class="responsive-grid-1-1">
+      <div class="form-group">
+        <label for="campaign_type">Campaign Type</label>
+        <input type="text" id="campaign_type" name="campaign_type" class="form-control" value="{{ form_data.campaign_type|default:'Tele-calling' }}" placeholder="e.g. Lead Generation, Feedback">
+      </div>
+
+      <div class="form-group">
+        <label for="target_calls">Target Call Goal</label>
+        <input type="number" id="target_calls" name="target_calls" class="form-control" value="{{ form_data.target_calls|default:'100' }}" min="0">
+        {% if errors.target_calls %}<div style="color: var(--danger); font-size: 0.75rem; margin-top: 0.2rem;">{{ errors.target_calls }}</div>{% endif %}
+      </div>
+    </div>
+
+    <div class="responsive-grid-1-1-1">
+      <div class="form-group">
+        <label for="start_date">Start Date *</label>
+        <input type="date" id="start_date" name="start_date" class="form-control" value="{{ form_data.start_date|default:'' }}" required>
+        {% if errors.start_date %}<div style="color: var(--danger); font-size: 0.75rem; margin-top: 0.2rem;">{{ errors.start_date }}</div>{% endif %}
+      </div>
+
+      <div class="form-group">
+        <label for="end_date">End Date *</label>
+        <input type="date" id="end_date" name="end_date" class="form-control" value="{{ form_data.end_date|default:'' }}" required>
+        {% if errors.end_date %}<div style="color: var(--danger); font-size: 0.75rem; margin-top: 0.2rem;">{{ errors.end_date }}</div>{% endif %}
+      </div>
+
+      <div class="form-group">
+        <label for="status">Initial Status</label>
+        <select id="status" name="status" class="form-select">
+          <option value="Draft" {% if form_data.status == 'Draft' %}selected{% endif %}>Draft</option>
+          <option value="Active" {% if form_data.status == 'Active' %}selected{% endif %}>Active</option>
+          <option value="Paused" {% if form_data.status == 'Paused' %}selected{% endif %}>Paused</option>
+          <option value="Completed" {% if form_data.status == 'Completed' %}selected{% endif %}>Completed</option>
+          <option value="Archived" {% if form_data.status == 'Archived' %}selected{% endif %}>Archived</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="description">Campaign Description & Objectives</label>
+      <textarea id="description" name="description" class="form-textarea" rows="4" placeholder="Briefly describe the target audience, call script goals, and expected outcomes...">{{ form_data.description|default:'' }}</textarea>
+    </div>
+
+    <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem;">
+      <a href="{% url 'campaign_list' %}" class="btn btn-secondary">Cancel</a>
+      <button type="submit" class="btn btn-primary">
+        <i data-lucide="save"></i> {% if is_edit %}Update Campaign{% else %}Save & Create Campaign{% endif %}
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}

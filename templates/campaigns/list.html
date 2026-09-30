@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+
+{% block title %}Campaigns — CCM{% endblock %}
+{% block page_title %}Calling Campaigns{% endblock %}
+
+{% block content %}
+<div class="card" style="margin-bottom: 1.5rem;">
+  <div class="card-header" style="flex-wrap: wrap; gap: 1rem;">
+    <div>
+      <h3 class="card-title">Campaign Directory</h3>
+      <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">View, monitor, and configure active tele-calling campaigns</p>
+    </div>
+    {% if user.is_admin_user %}
+    <a href="{% url 'campaign_create' %}" class="btn btn-primary">
+      <i data-lucide="plus-circle"></i> Create Campaign
+    </a>
+    {% endif %}
+  </div>
+
+  <!-- Search & Filters -->
+  <form method="GET" action="{% url 'campaign_list' %}" style="display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.25rem;">
+    <div style="flex: 1; min-width: 220px;">
+      <input type="text" name="q" value="{{ search_query }}" class="form-control" placeholder="Search campaign name or description...">
+    </div>
+    <div style="width: 160px;">
+      <select name="status" class="form-select">
+        <option value="">All Statuses</option>
+        <option value="Draft" {% if status_filter == 'Draft' %}selected{% endif %}>Draft</option>
+        <option value="Active" {% if status_filter == 'Active' %}selected{% endif %}>Active</option>
+        <option value="Paused" {% if status_filter == 'Paused' %}selected{% endif %}>Paused</option>
+        <option value="Completed" {% if status_filter == 'Completed' %}selected{% endif %}>Completed</option>
+        <option value="Archived" {% if status_filter == 'Archived' %}selected{% endif %}>Archived</option>
+      </select>
+    </div>
+    <button type="submit" class="btn btn-secondary">
+      <i data-lucide="filter"></i> Filter
+    </button>
+  </form>
+
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Campaign Name</th>
+          <th>Type</th>
+          <th>Status</th>
+          <th>Duration</th>
+          <th>Customers</th>
+          <th>Completed Calls</th>
+          <th>Progress</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in page_obj %}
+        <tr>
+          <td>
+            <a href="{% url 'campaign_detail' item.campaign.pk %}" style="font-weight: 600; color: var(--text-main);">
+              {{ item.campaign.name }}
+            </a>
+            <div style="font-size: 0.75rem; color: var(--text-muted);">Created: {{ item.campaign.created_at|date:"M d, Y" }}</div>
+          </td>
+          <td><span class="badge badge-secondary">{{ item.campaign.campaign_type }}</span></td>
+          <td>
+            {% if item.campaign.status == 'Active' %}
+              <span class="badge badge-success"><i data-lucide="play-circle" style="width: 12px; height: 12px;"></i> Active</span>
+            {% elif item.campaign.status == 'Paused' %}
+              <span class="badge badge-warning"><i data-lucide="pause-circle" style="width: 12px; height: 12px;"></i> Paused</span>
+            {% elif item.campaign.status == 'Completed' %}
+              <span class="badge badge-info"><i data-lucide="check-circle" style="width: 12px; height: 12px;"></i> Completed</span>
+            {% else %}
+              <span class="badge badge-secondary">{{ item.campaign.status }}</span>
+            {% endif %}
+          </td>
+          <td style="font-size: 0.8rem; color: var(--text-muted);">
+            {{ item.campaign.start_date|date:"M d" }} — {{ item.campaign.end_date|date:"M d, Y" }}
+          </td>
+          <td><strong>{{ item.total_customers }}</strong></td>
+          <td><span style="color: var(--success); font-weight: 600;">{{ item.completed_calls }}</span> / {{ item.campaign.target_calls }}</td>
+          <td style="width: 160px;">
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <div style="flex: 1; height: 6px; background-color: var(--divider-color); border-radius: 3px; overflow: hidden;">
+                <div style="width: {{ item.progress_pct }}%; height: 100%; background-color: var(--primary);"></div>
+              </div>
+              <span style="font-size: 0.75rem; font-weight: 600;">{{ item.progress_pct }}%</span>
+            </div>
+          </td>
+          <td>
+            <div style="display: flex; gap: 0.35rem;">
+              <a href="{% url 'campaign_detail' item.campaign.pk %}" class="btn btn-outline btn-sm" title="View Details">
+                <i data-lucide="eye"></i>
+              </a>
+              {% if user.is_admin_user %}
+              <a href="{% url 'campaign_edit' item.campaign.pk %}" class="btn btn-outline btn-sm" title="Edit Campaign">
+                <i data-lucide="edit-3"></i>
+              </a>
+              <a href="{% url 'questionnaire_builder' item.campaign.pk %}" class="btn btn-outline btn-sm" title="Questionnaire Builder" style="color: var(--primary);">
+                <i data-lucide="help-circle"></i>
+              </a>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="8">
+            <div class="empty-state">
+              <div class="empty-state-icon">
+                <i data-lucide="megaphone"></i>
+              </div>
+              <h4 class="empty-state-title">No Campaigns Found</h4>
+              <p class="empty-state-desc">Create your first tele-calling campaign to start managing customer calls and dynamic questionnaires.</p>
+              {% if user.is_admin_user %}
+              <a href="{% url 'campaign_create' %}" class="btn btn-primary">
+                <i data-lucide="plus-circle"></i> Create Campaign
+              </a>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  {% if page_obj.has_other_pages %}
+  <div class="pagination">
+    <div class="pagination-info">
+      Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ page_obj.paginator.count }} campaigns
+    </div>
+    <div class="pagination-links">
+      {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}&q={{ search_query }}&status={{ status_filter }}" class="page-link">&laquo; Prev</a>
+      {% endif %}
+      <span class="page-link active">{{ page_obj.number }}</span>
+      {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}&q={{ search_query }}&status={{ status_filter }}" class="page-link">Next &raquo;</a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+
+{% block title %}Call Saved Successfully — CCM{% endblock %}
+{% block page_title %}Call Recorded{% endblock %}
+
+{% block content %}
+<div style="max-width: 650px; margin: 2rem auto;">
+  <div class="card" style="text-align: center; padding: 2.5rem 1.5rem;">
+    <!-- Checkmark Icon -->
+    <div style="width: 64px; height: 64px; background-color: var(--success-light); color: var(--success); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem;">
+      <i data-lucide="check-circle-2" style="width: 36px; height: 36px;"></i>
+    </div>
+
+    <h2 style="font-size: 1.5rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem;">
+      Call Recorded Successfully
+    </h2>
+    <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1.75rem;">
+      The call interaction details and questionnaire responses for <strong>{{ call_record.customer.name }}</strong> have been committed to the campaign logs.
+    </p>
+
+    <!-- Call Summary Card -->
+    <div style="background-color: var(--bg-primary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.25rem; text-align: left; margin-bottom: 2rem;">
+      <div class="responsive-grid-1-1" style="font-size: 0.85rem;">
+        <div>
+          <span style="color: var(--text-muted); display: block; font-size: 0.75rem; text-transform: uppercase;">Customer</span>
+          <strong style="color: var(--text-main); font-size: 0.95rem;">{{ call_record.customer.name }}</strong>
+          <div style="color: var(--text-muted); font-size: 0.75rem;">{{ call_record.customer.phone }}</div>
+        </div>
+        <div>
+          <span style="color: var(--text-muted); display: block; font-size: 0.75rem; text-transform: uppercase;">Outcome Status</span>
+          <span class="badge {% if call_record.call_status == 'Completed' %}badge-success{% elif call_record.call_status == 'Follow-up Required' %}badge-warning{% else %}badge-info{% endif %}" style="font-size: 0.85rem; margin-top: 2px;">
+            {{ call_record.call_status }}
+          </span>
+        </div>
+        <div>
+          <span style="color: var(--text-muted); display: block; font-size: 0.75rem; text-transform: uppercase;">Call Duration</span>
+          <strong style="color: var(--text-main);">{{ call_record.duration }} seconds</strong>
+        </div>
+        <div>
+          <span style="color: var(--text-muted); display: block; font-size: 0.75rem; text-transform: uppercase;">Campaign</span>
+          <strong style="color: var(--text-main);">{{ call_record.campaign.name }}</strong>
+        </div>
+      </div>
+
+      {% if call_record.comments %}
+        <div style="margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid var(--divider-color); font-size: 0.85rem;">
+          <span style="color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; display: block; margin-bottom: 2px;">Notes / Summary</span>
+          <div style="color: var(--text-main);">{{ call_record.comments }}</div>
+        </div>
+      {% endif %}
+
+      {% if followup %}
+        <div style="margin-top: 1rem; padding: 0.75rem; background-color: var(--warning-light); border-radius: var(--radius-sm); font-size: 0.85rem;">
+          <strong style="color: var(--warning); display: flex; align-items: center; gap: 0.4rem;">
+            <i data-lucide="calendar" style="width: 16px; height: 16px;"></i> Follow-up Scheduled
+          </strong>
+          <div style="margin-top: 2px; color: var(--text-main);">
+            Due on <strong>{{ followup.scheduled_date|date:"M d, Y" }}</strong> at <strong>{{ followup.scheduled_time }}</strong>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Navigation / Next Steps -->
+    <div style="display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap;">
+      <a href="{% url 'customer_detail' call_record.customer.pk %}" class="btn btn-outline" style="padding: 0.65rem 1.25rem;">
+        <i data-lucide="user"></i> View Customer
+      </a>
+
+      {% if next_assignment %}
+        <a href="{% url 'record_call' next_assignment.pk %}" class="btn btn-primary" style="padding: 0.65rem 1.5rem; font-weight: 700;">
+          <i data-lucide="phone-forwarded"></i> Next Customer: {{ next_assignment.customer.name }}
+        </a>
+      {% else %}
+        <a href="{% url 'dashboard' %}" class="btn btn-primary" style="padding: 0.65rem 1.5rem;">
+          <i data-lucide="layout-dashboard"></i> Back to My Queue
+        </a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
