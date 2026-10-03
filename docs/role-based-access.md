@@ -45,10 +45,10 @@ CCM defines two mutually exclusive roles on the custom `User` model:
 | **Customers: Detail** (`/customers/<id>/`) | All Customers | Assigned Customers Only | IDOR check (`is_assigned` verification) |
 | **Tele-caller Roster & Detail** | ✅ Allowed | ❌ **HTTP 403 Forbidden** | `@admin_required` decorator |
 | **Tele-caller Password Reset** | ✅ Allowed | ❌ **HTTP 403 Forbidden** | `@admin_required` decorator |
-| **Live Call Console** (`/calls/record/<id>/`) | ✅ Allowed | Assigned Workload Only | Ownership & assignment check |
+| **Live Call Console** (`/calls/record/<id>/`) | ❌ **HTTP 403 Forbidden** | Assigned Workload Only | `@telecaller_required` & assignment check |
 | **Call Records: History** (`/calls/`) | Organization-wide | Own Call Logs Only | Queryset filtered by `telecaller=request.user` |
 | **Follow-ups: List** (`/followups/`) | Organization-wide | Own Follow-ups Only | Queryset filtered by `assigned_to=request.user` |
-| **Follow-ups: Complete / Cancel** | Organization-wide | Own Follow-ups Only | Ownership check on `followup.assigned_to` |
+| **Follow-ups: Complete / Cancel / Reschedule** | Organization-wide | Own Follow-ups Only | Ownership check on `followup.assigned_to` & status validation |
 | **Analytics Dashboard** (`/analytics/`) | ✅ Allowed | ❌ **HTTP 403 Forbidden** | `@admin_required` decorator |
 | **Chart API** (`/analytics/api/chart-data/`) | ✅ Allowed | ❌ **HTTP 403 Forbidden** | `@admin_required` decorator |
 | **Report Center** (`/reports/`) | ✅ Allowed | ❌ **HTTP 403 Forbidden** | `@admin_required` decorator |

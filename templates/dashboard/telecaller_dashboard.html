@@ -26,7 +26,7 @@
   <div class="stat-card">
     <div class="stat-info">
       <div class="stat-value" style="color: var(--warning);">{{ calls_pending }}</div>
-      <div class="stat-label">Pending Calls</div>
+      <div class="stat-label">Pending Assignments</div>
     </div>
     <div class="stat-icon yellow"><i data-lucide="clock"></i></div>
   </div>
@@ -86,9 +86,17 @@
             <span style="font-weight: 600; font-size: 0.85rem;">{{ task.campaign.name|default:"General Outreach" }}</span>
           </td>
           <td>
-            {% if task.is_urgent %}
-              <span class="badge badge-danger" style="font-size: 0.75rem;">
+            {% if task.task_type == 'followup_call' %}
+              <span class="badge badge-warning" style="font-size: 0.75rem;">
                 <i data-lucide="phone-forwarded" style="width: 12px; height: 12px; vertical-align: middle;"></i> {{ task.task }}
+              </span>
+            {% elif task.task_type == 'followup_only' %}
+              <span class="badge badge-danger" style="font-size: 0.75rem;">
+                <i data-lucide="calendar-clock" style="width: 12px; height: 12px; vertical-align: middle;"></i> {{ task.task }}
+              </span>
+            {% elif task.status == 'In Progress' %}
+              <span class="badge badge-info" style="font-size: 0.75rem;">
+                <i data-lucide="phone" style="width: 12px; height: 12px; vertical-align: middle;"></i> In Progress
               </span>
             {% else %}
               <span class="badge badge-info" style="font-size: 0.75rem;">
@@ -102,13 +110,19 @@
             </strong>
           </td>
           <td style="text-align: right;">
-            {% if task.assignment_pk %}
+            {% if task.task_type == 'new_call' or task.task_type == 'followup_call' %}
+              {# Assignment is open — link to record_call #}
               <a href="{% url 'record_call' task.assignment_pk %}" class="btn btn-primary btn-sm" style="font-weight: 600;">
-                <i data-lucide="phone"></i> Start Call
+                <i data-lucide="phone"></i> {{ task.action_label }}
+              </a>
+            {% elif task.task_type == 'followup_only' %}
+              {# Assignment is completed — link to follow-up list #}
+              <a href="{% url 'followup_list' %}" class="btn btn-secondary btn-sm" style="font-weight: 600;">
+                <i data-lucide="calendar-clock"></i> {{ task.action_label }}
               </a>
             {% else %}
               <a href="{% url 'customer_detail' task.customer.pk %}" class="btn btn-outline btn-sm">
-                View Profile
+                View Details
               </a>
             {% endif %}
           </td>

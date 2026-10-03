@@ -68,8 +68,15 @@ class AnalyticsAndDashboardTests(TestCase):
             related_object_id=self.customer.id
         )
         url = reverse('notification_read_single', kwargs={'pk': notif.id})
-        response = self.client.get(url)
-        self.assertRedirects(response, reverse('customer_detail', kwargs={'pk': self.customer.id}))
+        # GET redirects without mutating state
+        response_get = self.client.get(url)
+        self.assertRedirects(response_get, reverse('customer_detail', kwargs={'pk': self.customer.id}))
+        notif.refresh_from_db()
+        self.assertFalse(notif.is_read)
+
+        # POST mutates state and marks as read
+        response_post = self.client.post(url)
+        self.assertRedirects(response_post, reverse('customer_detail', kwargs={'pk': self.customer.id}))
         notif.refresh_from_db()
         self.assertTrue(notif.is_read)
 

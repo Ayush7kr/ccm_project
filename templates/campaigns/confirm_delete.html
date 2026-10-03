@@ -10,9 +10,24 @@
   </div>
 
   <h3 class="card-title" style="font-size: 1.25rem; margin-bottom: 0.5rem;">Delete Campaign "{{ campaign.name }}"?</h3>
-  <p style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 1.5rem;">
+  <p style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 1.25rem;">
     This will permanently remove the campaign, its questionnaire, customer assignments, and call logs. This action cannot be undone.
   </p>
+
+  {% if call_records_count > 0 or assignments_count > 0 %}
+  <div style="background-color: var(--warning-light); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0.85rem; margin-bottom: 1.5rem; text-align: left; font-size: 0.85rem;">
+    <div style="font-weight: 700; color: var(--warning); margin-bottom: 0.25rem;">
+      <i data-lucide="alert-circle" style="width: 15px; height: 15px; vertical-align: middle;"></i> Historical Data Warning:
+    </div>
+    <ul style="margin: 0; padding-left: 1.25rem; color: var(--text-main);">
+      <li><strong>{{ call_records_count }}</strong> call records will be permanently erased.</li>
+      <li><strong>{{ assignments_count }}</strong> customer assignments will be removed.</li>
+    </ul>
+    <div style="margin-top: 0.5rem; font-size: 0.8rem; color: var(--text-muted);">
+      Tip: If you want to preserve past call logs and analytics, set the status to <strong>Archived</strong> or <strong>Completed</strong> instead of deleting.
+    </div>
+  </div>
+  {% endif %}
 
   <form method="POST" action="{% url 'campaign_delete' campaign.pk %}">
     {% csrf_token %}

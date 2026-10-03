@@ -11,6 +11,9 @@ from accounts.decorators import admin_required
 from customers.models import CampaignCustomer, Customer
 from calls.models import CallRecord, FollowUp
 
+from django.db.models import Count, Q, OuterRef, Subquery, IntegerField, Value
+from django.db.models.functions import Coalesce
+
 @login_required
 def campaign_list(request):
     search_query = request.GET.get('q', '').strip()
@@ -33,10 +36,34 @@ def campaign_list(request):
     if status_filter:
         campaigns = campaigns.filter(status=status_filter)
 
+    cust_sub = Subquery(
+        CampaignCustomer.objects.filter(campaign=OuterRef('pk'))
+        .values('campaign')
+        .annotate(cnt=Count('id'))
+        .values('cnt')[:1],
+        output_field=IntegerField()
+    )
+    calls_sub = Subquery(
+        CallRecord.objects.filter(campaign=OuterRef('pk'), call_status='Completed')
+        .values('campaign')
+        .annotate(cnt=Count('id'))
+        .values('cnt')[:1],
+        output_field=IntegerField()
+    )
+
+    campaigns = campaigns.select_related('questionnaire').annotate(
+        total_customers_count=Coalesce(cust_sub, Value(0)),
+        completed_calls_count=Coalesce(calls_sub, Value(0)),
+    )
+
+    paginator = Paginator(campaigns, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
     campaign_data = []
-    for camp in campaigns:
-        total_customers = CampaignCustomer.objects.filter(campaign=camp).count()
-        completed_calls = CallRecord.objects.filter(campaign=camp, call_status='Completed').count()
+    for camp in page_obj:
+        total_customers = camp.total_customers_count
+        completed_calls = camp.completed_calls_count
         progress_pct = round((completed_calls / camp.target_calls * 100), 1) if camp.target_calls > 0 else 0
         if progress_pct > 100:
             progress_pct = 100
@@ -46,12 +73,10 @@ def campaign_list(request):
             'total_customers': total_customers,
             'completed_calls': completed_calls,
             'progress_pct': progress_pct,
-            'has_questionnaire': hasattr(camp, 'questionnaire')
+            'has_questionnaire': hasattr(camp, 'questionnaire') and camp.questionnaire is not None
         })
 
-    paginator = Paginator(campaign_data, 10)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
+    page_obj.object_list = campaign_data
 
     return render(request, 'campaigns/list.html', {
         'page_obj': page_obj,
@@ -103,6 +128,13 @@ def campaign_create(request):
             errors['target_calls'] = 'Target calls must be an integer.'
 
         if not errors:
+            # Validate status against allowed choices
+            valid_statuses = [s[0] for s in Campaign.STATUS_CHOICES]
+            if status not in valid_statuses:
+                allowed_str = ", ".join(valid_statuses)
+                errors['status'] = f"Invalid status. Allowed: {allowed_str}"
+
+        if not errors:
             campaign = Campaign.objects.create(
                 name=name,
                 description=description,
@@ -149,8 +181,14 @@ def campaign_detail(request, pk):
         call_records = call_records.filter(telecaller=request.user)
 
     completed_calls = call_records.filter(call_status='Completed').count()
-    pending_calls = assignments.filter(assignment_status__in=['Assigned', 'In Progress', 'Unassigned']).count()
-    followups_count = FollowUp.objects.filter(customer__campaign_links__campaign=campaign).distinct().count()
+    pending_assignments = assignments.filter(assignment_status__in=['Assigned', 'In Progress', 'Unassigned']).count()
+    completed_assignments = assignments.filter(assignment_status='Completed').count()
+    # Count follow-ups linked to call records for THIS campaign (accurate, no cross-join inflation)
+    followups_qs = FollowUp.objects.filter(call_record__campaign=campaign)
+    if request.user.is_telecaller_user:
+        followups_qs = followups_qs.filter(assigned_to=request.user)
+    followups_count = followups_qs.count()
+    call_records_count = call_records.count()
 
     progress_pct = round((completed_calls / campaign.target_calls * 100), 1) if campaign.target_calls > 0 else 0
     if progress_pct > 100: progress_pct = 100
@@ -207,7 +245,9 @@ def campaign_detail(request, pk):
         'total_customers': total_customers,
         'assigned_count': assigned_count,
         'completed_calls': completed_calls,
-        'pending_calls': pending_calls,
+        'completed_assignments': completed_assignments,
+        'pending_calls': pending_assignments,
+        'call_records_count': call_records_count,
         'followups_count': followups_count,
         'progress_pct': progress_pct,
         'questionnaire': questionnaire,
@@ -246,8 +286,16 @@ def campaign_edit(request, pk):
 
         try:
             target_calls_int = int(target_calls)
+            if target_calls_int < 0:
+                errors['target_calls'] = 'Target calls cannot be negative.'
         except ValueError:
+            errors['target_calls'] = 'Target calls must be an integer.'
             target_calls_int = 0
+
+        # Validate status against allowed choices
+        valid_statuses = [s[0] for s in Campaign.STATUS_CHOICES]
+        if status not in valid_statuses:
+            errors['status'] = f'Invalid status. Allowed: {", ".join(valid_statuses)}'
 
         if not errors:
             campaign.name = name
@@ -316,7 +364,14 @@ def campaign_delete(request, pk):
         campaign.delete()
         messages.success(request, f"Campaign '{name}' has been deleted.")
         return redirect('campaign_list')
-    return render(request, 'campaigns/confirm_delete.html', {'campaign': campaign})
+
+    call_records_count = campaign.call_records.count()
+    assignments_count = campaign.customer_assignments.count()
+    return render(request, 'campaigns/confirm_delete.html', {
+        'campaign': campaign,
+        'call_records_count': call_records_count,
+        'assignments_count': assignments_count,
+    })
 
 # --- QUESTIONNAIRE BUILDER VIEWS ---
 
@@ -358,6 +413,10 @@ def questionnaire_builder(request, campaign_id):
             opts_list = [o.strip() for o in opts_str.split(',') if o.strip()]
             is_req = (requireds[i] == '1') if i < len(requireds) else True
             q_id = question_ids[i] if i < len(question_ids) and question_ids[i] else None
+
+            valid_q_types = dict(Question.QUESTION_TYPES)
+            if q_type not in valid_q_types:
+                validation_errors.append(f"Invalid question type '{q_type}' for question '{q_text}'.")
 
             # Validate options based on question_type
             if q_type in ['single_choice', 'multiple_choice']:
@@ -432,6 +491,16 @@ def questionnaire_builder(request, campaign_id):
 @login_required
 def questionnaire_preview(request, campaign_id):
     campaign = get_object_or_404(Campaign, pk=campaign_id)
+
+    # RBAC: Telecaller must be assigned to this campaign
+    if request.user.is_telecaller_user:
+        is_assigned = CampaignCustomer.objects.filter(
+            campaign=campaign, assigned_telecaller=request.user
+        ).exists()
+        if not is_assigned:
+            messages.error(request, "You are not assigned to this campaign.")
+            return redirect('campaign_list')
+
     questionnaire = getattr(campaign, 'questionnaire', None)
     questions = questionnaire.questions.all() if questionnaire else []
 
@@ -440,4 +509,5 @@ def questionnaire_preview(request, campaign_id):
         'questionnaire': questionnaire,
         'questions': questions
     })
+
 

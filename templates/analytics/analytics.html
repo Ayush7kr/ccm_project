@@ -145,7 +145,7 @@
     </div>
     {% if outcome_total > 0 %}
     <div style="height: 280px; position: relative;">
-      <canvas id="outcomesDonutChart"></canvas>
+      <canvas id="outcomesDonutChart" data-counts="{{ outcome_chart_data|default:'[]' }}"></canvas>
     </div>
     <div class="responsive-grid-1-1" style="gap: 0.5rem; margin-top: 1rem;">
       {% for status, data in outcome_counts.items %}
@@ -495,15 +495,19 @@
     // Outcomes Donut Chart
     const outcomesCanvas = document.getElementById('outcomesDonutChart');
     if (outcomesCanvas) {
+      let outcomeCounts = [];
+      try {
+        outcomeCounts = JSON.parse(outcomesCanvas.dataset.counts || '[]');
+      } catch (e) {
+        outcomeCounts = [];
+      }
       const ctxOutcomes = outcomesCanvas.getContext('2d');
       new Chart(ctxOutcomes, {
         type: 'doughnut',
         data: {
           labels: ['Completed', 'No Answer', 'Unreachable', 'Busy', 'Follow-up Required'],
           datasets: [{
-            data: [
-              {% for status, data in outcome_counts.items %}{{ data.count }}{% if not forloop.last %}, {% endif %}{% endfor %}
-            ],
+            data: outcomeCounts,
             backgroundColor: ['#10b981', '#f59e0b', '#ef4444', '#64748b', '#2563eb'],
             borderWidth: 0,
             hoverOffset: 6

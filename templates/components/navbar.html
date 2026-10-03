@@ -29,11 +29,14 @@
         </div>
         <div style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 250px; overflow-y: auto;">
           {% for notif in unread_notifications %}
-            <a href="{% url 'notification_read_single' notif.pk %}" style="text-decoration: none; color: inherit; padding: 0.6rem; background-color: var(--primary-light); border-radius: 6px; display: block; transition: background-color 0.15s ease;">
-              <div style="font-weight: 700; font-size: 0.82rem; color: var(--text-main);">{{ notif.title }}</div>
-              <div style="font-size: 0.75rem; color: var(--text-muted); text-overflow: ellipsis; overflow: hidden; white-space: nowrap; margin-top: 1px;">{{ notif.message }}</div>
-              <div style="font-size: 0.68rem; color: var(--primary); margin-top: 3px; font-weight: 600;">{{ notif.created_at|timesince }} ago &bull; Click to open</div>
-            </a>
+            <form action="{% url 'notification_read_single' notif.pk %}" method="POST" style="margin: 0;">
+              {% csrf_token %}
+              <button type="submit" style="width: 100%; text-align: left; background-color: var(--primary-light); border: none; border-radius: 6px; padding: 0.6rem; cursor: pointer; font-family: inherit; transition: background-color 0.15s ease;">
+                <div style="font-weight: 700; font-size: 0.82rem; color: var(--text-main);">{{ notif.title }}</div>
+                <div style="font-size: 0.75rem; color: var(--text-muted); text-overflow: ellipsis; overflow: hidden; white-space: nowrap; margin-top: 1px;">{{ notif.message }}</div>
+                <div style="font-size: 0.68rem; color: var(--primary); margin-top: 3px; font-weight: 600;">{{ notif.created_at|timesince }} ago &bull; Click to open</div>
+              </button>
+            </form>
           {% empty %}
 
             <div style="text-align: center; color: var(--text-muted); padding: 1rem; font-size: 0.8rem;">No unread notifications</div>

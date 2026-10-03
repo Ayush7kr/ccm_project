@@ -94,7 +94,7 @@ def admin_dashboard(request):
         action_required_items.append({
             'label': 'Pending Calls',
             'count': pending_calls_action_count,
-            'url': '/calls/',
+            'url': '/customers/?status=Assigned',
             'badge_class': 'badge-warning',
             'icon': 'clock'
         })
@@ -127,6 +127,9 @@ def admin_dashboard(request):
         completed=Count('call_records', filter=Q(call_records__call_status='Completed')),
         total=Count('call_records')
     )
+    telecaller_stats_list = list(telecaller_stats)
+    telecaller_chart_labels = json.dumps([tc.username for tc in telecaller_stats_list])
+    telecaller_chart_data = json.dumps([tc.completed for tc in telecaller_stats_list])
 
     # Recent items
     recent_calls = CallRecord.objects.all().select_related('customer', 'telecaller', 'campaign')[:8]
@@ -148,6 +151,8 @@ def admin_dashboard(request):
         'chart_busy': calls_busy_count,
         'chart_followup': calls_followup_count,
         'telecaller_stats': telecaller_stats,
+        'telecaller_chart_labels': telecaller_chart_labels,
+        'telecaller_chart_data': telecaller_chart_data,
         'recent_calls': recent_calls,
         'pending_followups': pending_followups
     })
@@ -173,37 +178,67 @@ def telecaller_dashboard(request):
 
     # Build "My Next Tasks" combining urgent callbacks and next queue leads
     next_tasks = []
+    followup_customer_ids = set()
 
-    # 1. Scheduled followups for today or overdue
+    # 1. Scheduled follow-ups (Pending or Overdue)
     today_followups = FollowUp.objects.filter(
         assigned_to=user,
         status__in=['Pending', 'Overdue']
     ).select_related('customer', 'call_record__campaign').order_by('scheduled_date', 'scheduled_time')[:10]
 
     for fu in today_followups:
-        # Find active assignment link for quick call
         camp = fu.call_record.campaign if fu.call_record else None
-        link = CampaignCustomer.objects.filter(customer=fu.customer, assigned_telecaller=user).first()
+        # Find the assignment link for this customer (any status — we just need the campaign reference)
+        link = CampaignCustomer.objects.filter(
+            customer=fu.customer, assigned_telecaller=user, campaign__status='Active'
+        ).first()
+
         due_str = f"{fu.scheduled_time.strftime('%I:%M %p')}" if fu.scheduled_time else "Anytime"
         if fu.status == 'Overdue':
             due_str = f"Overdue ({fu.scheduled_date.strftime('%b %d')})"
 
+        campaign_obj = camp or (link.campaign if link else None)
+
+        # Determine whether the assignment allows a new call or is completed
+        assignment_status = link.assignment_status if link else None
+        can_start_call = assignment_status in ('Assigned', 'In Progress') if link else False
+
+        # Build action based on assignment state
+        if can_start_call and link:
+            # Assignment is still open — follow-up call goes through normal record_call
+            action_label = 'Start Follow-up Call'
+            action_url_name = 'record_call'
+            action_pk = link.pk
+            task_type = 'followup_call'
+        else:
+            # Assignment is completed — follow-up should be handled via follow-up workflow
+            action_label = 'Handle Follow-up'
+            action_url_name = 'followup_list'
+            action_pk = None
+            task_type = 'followup_only'
+
+        followup_customer_ids.add(fu.customer_id)
         next_tasks.append({
             'customer': fu.customer,
-            'campaign': camp or (link.campaign if link else None),
+            'campaign': campaign_obj,
             'task': 'Follow-up Callback',
             'due_time': due_str,
             'is_urgent': True,
-            'assignment_pk': link.pk if link else None,
-            'status': fu.status
+            'assignment_pk': action_pk,
+            'status': fu.status,
+            'task_type': task_type,
+            'action_label': action_label,
+            'action_url_name': action_url_name,
+            'followup_id': fu.pk,
         })
 
-    # 2. General pending customer calling queue
+    # 2. General pending customer calling queue (only Assigned/In Progress)
     pending_leads = assigned_links.filter(
         assignment_status__in=['Assigned', 'In Progress']
-    ).exclude(customer_id__in=[t['customer'].id for t in next_tasks])[:15]
+    ).exclude(customer_id__in=followup_customer_ids)[:15]
 
     for link in pending_leads:
+        action_label = 'Continue Call' if link.assignment_status == 'In Progress' else 'Start Call'
         next_tasks.append({
             'customer': link.customer,
             'campaign': link.campaign,
@@ -211,7 +246,11 @@ def telecaller_dashboard(request):
             'due_time': 'Next in Queue',
             'is_urgent': False,
             'assignment_pk': link.pk,
-            'status': link.assignment_status
+            'status': link.assignment_status,
+            'task_type': 'new_call',
+            'action_label': action_label,
+            'action_url_name': 'record_call',
+            'followup_id': None,
         })
 
     return render(request, 'dashboard/telecaller_dashboard.html', {
@@ -334,6 +373,7 @@ def analytics_view(request):
         # Outcome breakdown
         'outcome_counts': outcome_counts,
         'outcome_total': outcome_total,
+        'outcome_chart_data': json.dumps([d['count'] for d in outcome_counts.values()]),
         # Activity over time (JSON for charts)
         'activity_labels': json.dumps(activity_labels),
         'activity_total': json.dumps(activity_total),
@@ -472,6 +512,8 @@ def _build_report_preview(report_type, campaign_id, telecaller_id, call_status, 
         qs = QuestionResponse.objects.all()
         if campaign_id:
             qs = qs.filter(call_record__campaign_id=campaign_id)
+        if telecaller_id:
+            qs = qs.filter(call_record__telecaller_id=telecaller_id)
         if start_date:
             qs = qs.filter(call_record__created_at__date__gte=start_date)
         if end_date:
@@ -479,12 +521,19 @@ def _build_report_preview(report_type, campaign_id, telecaller_id, call_status, 
         preview['record_count'] = qs.count()
         preview['record_label'] = 'responses'
     elif report_type == 'telecaller':
-        preview['record_count'] = User.objects.filter(role='TELE_CALLER').count()
+        tc_qs = User.objects.filter(role='TELE_CALLER')
+        if telecaller_id:
+            tc_qs = tc_qs.filter(id=telecaller_id)
+        preview['record_count'] = tc_qs.count()
         preview['record_label'] = 'tele-callers'
     elif report_type == 'followups':
         qs = FollowUp.objects.all()
         if campaign_id:
             qs = qs.filter(call_record__campaign_id=campaign_id)
+        if telecaller_id:
+            qs = qs.filter(assigned_to_id=telecaller_id)
+        if call_status:
+            qs = qs.filter(status=call_status)
         if start_date:
             qs = qs.filter(scheduled_date__gte=start_date)
         if end_date:
@@ -635,6 +684,8 @@ def export_pdf_report(request):
             'question', 'call_record__customer', 'call_record__campaign')
         if campaign_id:
             responses = responses.filter(call_record__campaign_id=campaign_id)
+        if telecaller_id:
+            responses = responses.filter(call_record__telecaller_id=telecaller_id)
         if start_date:
             responses = responses.filter(call_record__created_at__date__gte=start_date)
         if end_date:
@@ -661,6 +712,10 @@ def export_pdf_report(request):
         followups = FollowUp.objects.all().select_related('customer', 'assigned_to', 'call_record__campaign')
         if campaign_id:
             followups = followups.filter(call_record__campaign_id=campaign_id)
+        if telecaller_id:
+            followups = followups.filter(assigned_to_id=telecaller_id)
+        if call_status_filter:
+            followups = followups.filter(status=call_status_filter)
         if start_date:
             followups = followups.filter(scheduled_date__gte=start_date)
         if end_date:
@@ -693,7 +748,7 @@ def export_pdf_report(request):
     else:  # telecaller
         story.append(Paragraph("Tele-caller Performance Report", section_style))
         from .engine import compute_telecaller_performance
-        tc_perf = compute_telecaller_performance(campaign_id or None, start_date, end_date)
+        tc_perf = compute_telecaller_performance(campaign_id or None, start_date, end_date, telecaller_id=telecaller_id or None)
 
         data = [["Name", "Username", "Assigned", "Completed", "Completion %", "Avg Duration", "Pending", "Follow-ups"]]
         for row in tc_perf:
@@ -837,6 +892,8 @@ def export_excel_report(request):
             'question', 'call_record__customer', 'call_record__campaign')
         if campaign_id:
             resps_qs = resps_qs.filter(call_record__campaign_id=campaign_id)
+        if telecaller_id:
+            resps_qs = resps_qs.filter(call_record__telecaller_id=telecaller_id)
         if start_date:
             resps_qs = resps_qs.filter(call_record__created_at__date__gte=start_date)
         if end_date:
@@ -865,6 +922,10 @@ def export_excel_report(request):
         fus = FollowUp.objects.all().select_related('customer', 'assigned_to', 'call_record__campaign')
         if campaign_id:
             fus = fus.filter(call_record__campaign_id=campaign_id)
+        if telecaller_id:
+            fus = fus.filter(assigned_to_id=telecaller_id)
+        if call_status_filter:
+            fus = fus.filter(status=call_status_filter)
         if start_date:
             fus = fus.filter(scheduled_date__gte=start_date)
         if end_date:
@@ -884,7 +945,7 @@ def export_excel_report(request):
         ws.append(headers)
         style_header_row(ws)
 
-        tc_perf = compute_telecaller_performance(campaign_id or None, start_date, end_date)
+        tc_perf = compute_telecaller_performance(campaign_id or None, start_date, end_date, telecaller_id=telecaller_id or None)
         for row in tc_perf:
             tc = row['telecaller']
             ws.append([tc.get_full_name() or tc.username, tc.username, tc.email,
@@ -913,6 +974,8 @@ def notification_list(request):
 
 @login_required
 def notification_read_all(request):
+    if request.method != 'POST':
+        return redirect('notification_list')
     Notification.objects.filter(recipient=request.user, is_read=False).update(is_read=True)
     messages.success(request, "All notifications marked as read.")
     return redirect('notification_list')
@@ -920,14 +983,29 @@ def notification_read_all(request):
 @login_required
 def notification_read_single(request, pk):
     notif = get_object_or_404(Notification, pk=pk, recipient=request.user)
-    notif.is_read = True
-    notif.save()
+    if request.method == 'POST':
+        notif.is_read = True
+        notif.save()
 
-    # Smart redirect to relevant object if present
+    # Smart redirect to relevant object if present, with graceful handling for deleted or unassigned objects
     if notif.related_object_type == 'campaign' and notif.related_object_id:
-        return redirect('campaign_detail', pk=notif.related_object_id)
+        camp = Campaign.objects.filter(pk=notif.related_object_id).first()
+        if camp:
+            if request.user.is_admin_user or CampaignCustomer.objects.filter(campaign=camp, assigned_telecaller=request.user).exists():
+                return redirect('campaign_detail', pk=camp.pk)
+            else:
+                messages.info(request, "You are no longer assigned to this campaign.")
+        else:
+            messages.info(request, "The related campaign is no longer available.")
     elif notif.related_object_type == 'customer' and notif.related_object_id:
-        return redirect('customer_detail', pk=notif.related_object_id)
+        cust = Customer.objects.filter(pk=notif.related_object_id).first()
+        if cust:
+            if request.user.is_admin_user or CampaignCustomer.objects.filter(customer=cust, assigned_telecaller=request.user).exists():
+                return redirect('customer_detail', pk=cust.pk)
+            else:
+                messages.info(request, "You do not have access to this customer.")
+        else:
+            messages.info(request, "The related customer is no longer available.")
     elif notif.related_object_type == 'followup':
         return redirect('followup_list')
 

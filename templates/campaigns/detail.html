@@ -81,7 +81,7 @@
   <div class="stat-card">
     <div class="stat-info">
       <div class="stat-value" style="color: var(--success);">{{ completed_calls }}</div>
-      <div class="stat-label">Completed</div>
+      <div class="stat-label">Completed Calls</div>
     </div>
     <div class="stat-icon green"><i data-lucide="phone-call"></i></div>
   </div>
@@ -89,7 +89,7 @@
   <div class="stat-card">
     <div class="stat-info">
       <div class="stat-value" style="color: var(--warning);">{{ pending_calls }}</div>
-      <div class="stat-label">Pending</div>
+      <div class="stat-label">Pending Assignments</div>
     </div>
     <div class="stat-icon yellow"><i data-lucide="clock"></i></div>
   </div>
@@ -100,6 +100,14 @@
       <div class="stat-label">Follow-ups</div>
     </div>
     <div class="stat-icon cyan"><i data-lucide="calendar"></i></div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-info">
+      <div class="stat-value">{{ call_records_count }}</div>
+      <div class="stat-label">Call Records</div>
+    </div>
+    <div class="stat-icon blue"><i data-lucide="file-text"></i></div>
   </div>
 </div>
 
@@ -172,9 +180,27 @@
               </span>
             </td>
             <td>
-              <a href="{% url 'record_call' link.pk %}" class="btn btn-primary btn-sm">
-                <i data-lucide="phone"></i> Call Console
-              </a>
+              {% if user.is_admin_user %}
+                <a href="{% url 'customer_detail' link.customer.pk %}" class="btn btn-outline btn-sm" title="View Customer Profile">
+                  <i data-lucide="eye"></i> View Customer
+                </a>
+              {% elif user.is_telecaller_user and link.assigned_telecaller == user %}
+                {% if campaign.status == 'Active' and link.assignment_status == 'Assigned' or link.assignment_status == 'In Progress' %}
+                  <a href="{% url 'record_call' link.pk %}" class="btn btn-primary btn-sm">
+                    <i data-lucide="phone"></i> Call Console
+                  </a>
+                {% elif link.assignment_status == 'Completed' %}
+                  <a href="{% url 'customer_detail' link.customer.pk %}" class="btn btn-outline btn-sm" title="Assignment Completed — View Customer Profile">
+                    <i data-lucide="check-circle" style="color: var(--success); width: 14px; height: 14px;"></i> Completed
+                  </a>
+                {% else %}
+                  <span class="badge badge-secondary">{{ campaign.status }}</span>
+                {% endif %}
+              {% else %}
+                <a href="{% url 'customer_detail' link.customer.pk %}" class="btn btn-outline btn-sm">
+                  <i data-lucide="eye"></i> View
+                </a>
+              {% endif %}
             </td>
           </tr>
           {% empty %}

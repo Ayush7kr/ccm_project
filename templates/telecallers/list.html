@@ -37,13 +37,13 @@
       <thead>
         <tr>
           <th>Tele-caller</th>
-          <th>Contact</th>
+          <th class="col-hide-md">Contact</th>
           <th>Status</th>
           <th>Assigned</th>
           <th>Completed</th>
-          <th>Pending</th>
-          <th>Completion %</th>
-          <th>Actions</th>
+          <th class="col-hide-lg">Pending</th>
+          <th class="col-hide-sm">Completion %</th>
+          <th style="text-align: right; width: 90px;">Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -53,16 +53,16 @@
             <div style="display: flex; align-items: center; gap: 0.75rem;">
               <div class="avatar" style="width: 32px; height: 32px; font-size: 0.8rem;">{{ item.user.username|slice:":1" }}</div>
               <div>
-                <a href="{% url 'telecaller_detail' item.user.pk %}" style="font-weight: 600; color: var(--text-main);">
+                <a href="{% url 'telecaller_detail' item.user.pk %}" style="font-weight: 600; color: var(--text-main); display: block;" class="cell-truncate">
                   {{ item.user.get_full_name|default:item.user.username }}
                 </a>
                 <div style="font-size: 0.75rem; color: var(--text-muted);">@{{ item.user.username }}</div>
               </div>
             </div>
           </td>
-          <td>
-            <div style="font-size: 0.85rem;">{{ item.user.email|default:"No email" }}</div>
-            <div style="font-size: 0.75rem; color: var(--text-muted);">{{ item.user.phone|default:"No phone" }}</div>
+          <td class="col-hide-md">
+            <div style="font-size: 0.82rem;" class="cell-truncate-sm">{{ item.user.email|default:"No email" }}</div>
+            <div style="font-size: 0.74rem; color: var(--text-muted);">{{ item.user.phone|default:"No phone" }}</div>
           </td>
           <td>
             {% if item.user.is_active %}
@@ -73,17 +73,17 @@
           </td>
           <td><strong>{{ item.assigned_count }}</strong></td>
           <td><span style="color: var(--success); font-weight: 600;">{{ item.completed_calls }}</span></td>
-          <td><span style="color: var(--warning); font-weight: 600;">{{ item.pending_calls }}</span></td>
-          <td>
+          <td class="col-hide-lg"><span style="color: var(--warning); font-weight: 600;">{{ item.pending_calls }}</span></td>
+          <td class="col-hide-sm">
             <div style="display: flex; align-items: center; gap: 0.5rem;">
-              <div style="flex: 1; height: 6px; background-color: var(--divider-color); border-radius: 3px; min-width: 50px; overflow: hidden;">
+              <div style="flex: 1; height: 6px; background-color: var(--divider-color); border-radius: 3px; min-width: 45px; overflow: hidden;">
                 <div style="width: {{ item.completion_rate }}%; height: 100%; background-color: var(--primary);"></div>
               </div>
-              <span style="font-size: 0.8rem; font-weight: 600;">{{ item.completion_rate }}%</span>
+              <span style="font-size: 0.78rem; font-weight: 600;">{{ item.completion_rate }}%</span>
             </div>
           </td>
-          <td>
-            <div style="display: flex; gap: 0.5rem;">
+          <td style="text-align: right; white-space: nowrap;">
+            <div style="display: flex; gap: 0.35rem; justify-content: flex-end;">
               <a href="{% url 'telecaller_detail' item.user.pk %}" class="btn btn-outline btn-sm" title="View Profile">
                 <i data-lucide="eye"></i>
               </a>

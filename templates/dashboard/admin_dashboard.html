@@ -64,13 +64,13 @@
     <div class="stat-icon green"><i data-lucide="phone-call"></i></div>
   </a>
 
-  <div class="stat-card">
+  <a href="/customers/?status=Assigned" class="stat-card" style="text-decoration: none;">
     <div class="stat-info">
       <div class="stat-value" style="color: var(--warning);">{{ calls_pending }}</div>
-      <div class="stat-label">Calls Pending</div>
+      <div class="stat-label">Pending Assignments</div>
     </div>
     <div class="stat-icon yellow"><i data-lucide="clock"></i></div>
-  </div>
+  </a>
 
   <a href="{% url 'followup_list' %}" class="stat-card" style="text-decoration: none;">
     <div class="stat-info">
@@ -174,7 +174,13 @@
       <h3 class="card-title">Call Outcomes Distribution</h3>
     </div>
     <div style="height: 260px; position: relative;">
-      <canvas id="outcomesChart"></canvas>
+      <canvas id="outcomesChart"
+        data-completed="{{ chart_completed|default:0 }}"
+        data-no-answer="{{ chart_no_answer|default:0 }}"
+        data-unreachable="{{ chart_unreachable|default:0 }}"
+        data-busy="{{ chart_busy|default:0 }}"
+        data-followup="{{ chart_followup|default:0 }}">
+      </canvas>
     </div>
   </div>
 
@@ -184,7 +190,10 @@
       <h3 class="card-title">Tele-caller Performance</h3>
     </div>
     <div style="height: 260px; position: relative;">
-      <canvas id="performanceChart"></canvas>
+      <canvas id="performanceChart"
+        data-labels="{{ telecaller_chart_labels|default:'[]' }}"
+        data-data="{{ telecaller_chart_data|default:'[]' }}">
+      </canvas>
     </div>
   </div>
 </div>
@@ -258,18 +267,18 @@
     // Outcomes Donut Chart
     const ctxOutcomes = document.getElementById('outcomesChart');
     if (ctxOutcomes) {
+      const completed = Number(ctxOutcomes.dataset.completed) || 0;
+      const noAnswer = Number(ctxOutcomes.dataset.noAnswer) || 0;
+      const unreachable = Number(ctxOutcomes.dataset.unreachable) || 0;
+      const busy = Number(ctxOutcomes.dataset.busy) || 0;
+      const followup = Number(ctxOutcomes.dataset.followup) || 0;
+
       new Chart(ctxOutcomes, {
         type: 'doughnut',
         data: {
           labels: ['Completed', 'No Answer', 'Unreachable', 'Busy', 'Follow-up Req'],
           datasets: [{
-            data: [
-              {{ chart_completed|default:0 }},
-              {{ chart_no_answer|default:0 }},
-              {{ chart_unreachable|default:0 }},
-              {{ chart_busy|default:0 }},
-              {{ chart_followup|default:0 }}
-            ],
+            data: [completed, noAnswer, unreachable, busy, followup],
             backgroundColor: ['#10b981', '#f59e0b', '#ef4444', '#64748b', '#2563eb']
           }]
         },
@@ -284,13 +293,23 @@
     // Performance Bar Chart
     const ctxPerf = document.getElementById('performanceChart');
     if (ctxPerf) {
+      let perfLabels = [];
+      let perfData = [];
+      try {
+        perfLabels = JSON.parse(ctxPerf.dataset.labels || '[]');
+        perfData = JSON.parse(ctxPerf.dataset.data || '[]');
+      } catch (e) {
+        perfLabels = [];
+        perfData = [];
+      }
+
       new Chart(ctxPerf, {
         type: 'bar',
         data: {
-          labels: [{% for tc in telecaller_stats %}"{{ tc.username }}",{% endfor %}],
+          labels: perfLabels,
           datasets: [{
             label: 'Completed Calls',
-            data: [{% for tc in telecaller_stats %}{{ tc.completed }},{% endfor %}],
+            data: perfData,
             backgroundColor: '#2563eb',
             borderRadius: 6
           }]

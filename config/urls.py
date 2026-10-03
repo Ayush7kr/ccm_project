@@ -15,6 +15,7 @@ urlpatterns = [
 
     # Auth
     path('login/', account_views.login_view, name='login'),
+    path('register/', account_views.telecaller_register, name='telecaller_register'),
     path('logout/', account_views.logout_view, name='logout'),
 
     # Dashboard
@@ -59,6 +60,7 @@ urlpatterns = [
     path('followups/', call_views.followup_list, name='followup_list'),
     path('followups/<int:pk>/complete/', call_views.followup_complete, name='followup_complete'),
     path('followups/<int:pk>/cancel/', call_views.followup_cancel, name='followup_cancel'),
+    path('followups/<int:pk>/reschedule/', call_views.followup_reschedule, name='followup_reschedule'),
 
 
     # Analytics & Reports

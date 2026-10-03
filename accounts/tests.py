@@ -331,4 +331,109 @@ class AccountTests(TestCase):
         resp_reset = self.client.post(reverse('telecaller_reset_password', args=[self.telecaller.pk]))
         self.assertRedirects(resp_reset, reverse('telecaller_detail', args=[self.telecaller.pk]))
 
+    # --- Tele-caller Self-Registration Tests ---
+
+    def test_register_page_loads_anonymously(self):
+        """GET /register/ renders registration page without authentication."""
+        response = self.client.get(reverse('telecaller_register'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Create Your Account")
+        self.assertContains(response, "Register as Tele-caller")
+
+    def test_register_redirects_if_authenticated(self):
+        """Authenticated users visiting /register/ are redirected to dashboard."""
+        self.client.login(username='telecaller_test', password='password123')
+        response = self.client.get(reverse('telecaller_register'))
+        self.assertRedirects(response, reverse('dashboard'))
+
+    def test_register_missing_fields_validation(self):
+        """POST /register/ with missing fields fails with validation errors."""
+        response = self.client.post(reverse('telecaller_register'), {})
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('Username is required.', response.context['errors'].values())
+        self.assertIn('First name is required.', response.context['errors'].values())
+        self.assertIn('Email address is required.', response.context['errors'].values())
+
+    def test_register_password_mismatch(self):
+        """POST /register/ with mismatched passwords fails validation."""
+        response = self.client.post(reverse('telecaller_register'), {
+            'username': 'new_caller',
+            'first_name': 'New',
+            'last_name': 'Caller',
+            'email': 'newcaller@example.com',
+            'phone': '+919988776655',
+            'password': 'password123',
+            'confirm_password': 'mismatched123',
+            'terms_accepted': 'on'
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['errors']['confirm_password'], 'Passwords do not match.')
+        self.assertFalse(User.objects.filter(username='new_caller').exists())
+
+    def test_register_duplicate_username_rejected(self):
+        """POST /register/ rejects an existing username."""
+        response = self.client.post(reverse('telecaller_register'), {
+            'username': 'telecaller_test',
+            'first_name': 'Duplicate',
+            'email': 'unique@example.com',
+            'phone': '+919988776655',
+            'password': 'password123',
+            'confirm_password': 'password123',
+            'terms_accepted': 'on'
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('This username is already taken.', response.context['errors']['username'])
+
+    def test_register_duplicate_email_rejected(self):
+        """POST /register/ rejects an already registered email."""
+        self.telecaller.email = 'taken@example.com'
+        self.telecaller.save()
+
+        response = self.client.post(reverse('telecaller_register'), {
+            'username': 'new_caller_unique',
+            'first_name': 'Duplicate Email',
+            'email': 'taken@example.com',
+            'phone': '+919988776655',
+            'password': 'password123',
+            'confirm_password': 'password123',
+            'terms_accepted': 'on'
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('This email is already registered.', response.context['errors']['email'])
+
+    def test_register_success(self):
+        """POST /register/ successfully creates tele-caller account and logs in."""
+        from analytics.models import Notification
+
+        response = self.client.post(reverse('telecaller_register'), {
+            'username': 'priya_telecaller',
+            'first_name': 'Priya',
+            'last_name': 'Sharma',
+            'email': 'priya@example.com',
+            'phone': '+919876543210',
+            'password': 'SecurePassword123!',
+            'confirm_password': 'SecurePassword123!',
+            'terms_accepted': 'on'
+        })
+        self.assertRedirects(response, reverse('dashboard'))
+
+        # Verify database record
+        user = User.objects.get(username='priya_telecaller')
+        self.assertEqual(user.first_name, 'Priya')
+        self.assertEqual(user.last_name, 'Sharma')
+        self.assertEqual(user.email, 'priya@example.com')
+        self.assertEqual(user.phone, '+919876543210')
+        self.assertEqual(user.role, 'TELE_CALLER')
+        self.assertTrue(user.is_active)
+        self.assertTrue(user.check_password('SecurePassword123!'))
+
+        # Verify welcome notification created
+        user_notif = Notification.objects.filter(recipient=user, title='Welcome to CCM!').first()
+        self.assertIsNotNone(user_notif)
+
+        # Verify admin alert notification created
+        admin_notif = Notification.objects.filter(recipient=self.admin, title='New Tele-caller Registered').first()
+        self.assertIsNotNone(admin_notif)
+
+
 

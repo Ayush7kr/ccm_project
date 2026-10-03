@@ -57,35 +57,37 @@
       <thead>
         <tr>
           <th>Customer Name</th>
-          <th>Phone</th>
-          <th>Email / Company</th>
-          <th>Location</th>
+          <th class="col-hide-sm">Phone</th>
+          <th class="col-hide-md">Email / Company</th>
+          <th class="col-hide-lg">Location</th>
           <th>Enrolled Campaign(s)</th>
           <th>Assigned Tele-caller</th>
-          <th>Last Interaction</th>
-          <th>Actions</th>
+          <th class="col-hide-xl">Last Interaction</th>
+          <th style="text-align: right; width: 90px;">Actions</th>
         </tr>
       </thead>
       <tbody>
         {% for item in customers_data %}
         <tr>
           <td>
-            <a href="{% url 'customer_detail' item.customer.pk %}" style="font-weight: 600; color: var(--text-main);">
+            <a href="{% url 'customer_detail' item.customer.pk %}" style="font-weight: 700; color: var(--text-main); display: block;" class="cell-truncate">
               {{ item.customer.name }}
             </a>
-            <div style="font-size: 0.75rem; color: var(--text-muted);">Source: {{ item.customer.source }}</div>
+            <div style="font-size: 0.74rem; color: var(--text-muted);">
+              {{ item.customer.phone }}{% if item.customer.company %} &bull; {{ item.customer.company }}{% endif %}
+            </div>
           </td>
-          <td><strong>{{ item.customer.phone }}</strong></td>
-          <td>
-            <div style="font-size: 0.85rem;">{{ item.customer.email|default:"—" }}</div>
-            <div style="font-size: 0.75rem; color: var(--text-muted);">{{ item.customer.company|default:"" }}</div>
+          <td class="col-hide-sm"><strong>{{ item.customer.phone }}</strong></td>
+          <td class="col-hide-md">
+            <div style="font-size: 0.82rem;" class="cell-truncate-sm">{{ item.customer.email|default:"—" }}</div>
+            <div style="font-size: 0.74rem; color: var(--text-muted);" class="cell-truncate-sm">{{ item.customer.company|default:"" }}</div>
           </td>
-          <td style="font-size: 0.85rem;">
+          <td class="col-hide-lg" style="font-size: 0.82rem;">
             {% if item.customer.city %}{{ item.customer.city }}{% if item.customer.state %}, {{ item.customer.state }}{% endif %}{% else %}—{% endif %}
           </td>
           <td>
             {% for link in item.campaign_links %}
-              <a href="{% url 'campaign_detail' link.campaign.pk %}" class="badge badge-secondary" style="margin-bottom: 2px;">
+              <a href="{% url 'campaign_detail' link.campaign.pk %}" class="badge badge-secondary" style="margin-bottom: 2px; font-size: 0.7rem;">
                 {{ link.campaign.name }}
               </a>
             {% empty %}
@@ -97,15 +99,15 @@
               {% if link.assigned_telecaller %}
                 <div style="font-size: 0.8rem; font-weight: 600;">{{ link.assigned_telecaller.get_full_name|default:link.assigned_telecaller.username }}</div>
               {% else %}
-                <span class="badge badge-warning">Unassigned</span>
+                <span class="badge badge-warning" style="font-size: 0.7rem;">Unassigned</span>
               {% endif %}
             {% empty %}
               —
             {% endfor %}
           </td>
-          <td>
+          <td class="col-hide-xl">
             {% if item.last_call %}
-              <span class="badge {% if item.last_call.call_status == 'Completed' %}badge-success{% else %}badge-info{% endif %}">
+              <span class="badge {% if item.last_call.call_status == 'Completed' %}badge-success{% else %}badge-info{% endif %}" style="font-size: 0.7rem;">
                 {{ item.last_call.call_status }}
               </span>
               <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 2px;">{{ item.last_call.created_at|date:"M d, H:i" }}</div>
@@ -113,7 +115,7 @@
               <span style="font-size: 0.75rem; color: var(--text-subtle);">No calls yet</span>
             {% endif %}
           </td>
-          <td>
+          <td style="text-align: right; white-space: nowrap;">
             <div style="display: flex; gap: 0.35rem;">
               <a href="{% url 'customer_detail' item.customer.pk %}" class="btn btn-outline btn-sm" title="View Profile">
                 <i data-lucide="eye"></i>

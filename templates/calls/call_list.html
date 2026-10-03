@@ -68,43 +68,45 @@
         <tr>
           <th>Customer</th>
           <th>Campaign</th>
-          <th>Tele-caller</th>
+          <th class="col-hide-lg">Tele-caller</th>
           <th>Outcome Status</th>
-          <th>Duration</th>
+          <th class="col-hide-md">Duration</th>
           <th>Date & Time</th>
-          <th>Call Notes</th>
+          <th class="col-hide-sm">Call Notes</th>
         </tr>
       </thead>
       <tbody>
         {% for call in calls %}
         <tr>
           <td>
-            <a href="{% url 'customer_detail' call.customer.pk %}" style="font-weight: 700; text-decoration: none; color: var(--text-main);">
+            <a href="{% url 'customer_detail' call.customer.pk %}" style="font-weight: 700; text-decoration: none; color: var(--text-main); display: block;" class="cell-truncate">
               {{ call.customer.name }}
             </a>
-            <div style="font-size: 0.75rem; color: var(--text-muted);">
+            <div style="font-size: 0.74rem; color: var(--text-muted);">
               {{ call.customer.phone }}{% if call.customer.company %} &bull; {{ call.customer.company }}{% endif %}
             </div>
           </td>
           <td>
-            <a href="{% url 'campaign_detail' call.campaign.pk %}" style="font-size: 0.85rem; font-weight: 600; text-decoration: none; color: var(--text-main);">
+            <a href="{% url 'campaign_detail' call.campaign.pk %}" style="font-size: 0.82rem; font-weight: 600; text-decoration: none; color: var(--text-main); display: block;" class="cell-truncate-sm" title="{{ call.campaign.name }}">
               {{ call.campaign.name }}
             </a>
           </td>
-          <td>
-            <span style="font-size: 0.85rem;">{{ call.telecaller.get_full_name|default:call.telecaller.username }}</span>
+          <td class="col-hide-lg">
+            <span style="font-size: 0.82rem;">{{ call.telecaller.get_full_name|default:call.telecaller.username }}</span>
           </td>
           <td>
-            <span class="badge {% if call.call_status == 'Completed' %}badge-success{% elif call.call_status == 'Follow-up Required' %}badge-warning{% elif call.call_status == 'No Answer' %}badge-warning{% else %}badge-info{% endif %}">
+            <span class="badge {% if call.call_status == 'Completed' %}badge-success{% elif call.call_status == 'Follow-up Required' %}badge-warning{% elif call.call_status == 'No Answer' %}badge-warning{% else %}badge-info{% endif %}" style="font-size: 0.72rem;">
               {{ call.call_status }}
             </span>
           </td>
-          <td><strong>{{ call.duration }}s</strong></td>
-          <td style="font-size: 0.8rem; color: var(--text-muted); white-space: nowrap;">
+          <td class="col-hide-md"><strong>{{ call.duration }}s</strong></td>
+          <td style="font-size: 0.78rem; color: var(--text-muted); white-space: nowrap;">
             {{ call.created_at|date:"M d, Y H:i" }}
           </td>
-          <td style="font-size: 0.85rem; max-width: 250px;">
-            {{ call.comments|default:"No notes entered."|truncatewords:10 }}
+          <td class="col-hide-sm" style="font-size: 0.8rem; max-width: 220px;">
+            <span class="cell-truncate" title="{{ call.comments|default:'No notes entered.' }}">
+              {{ call.comments|default:"No notes entered." }}
+            </span>
           </td>
         </tr>
         {% empty %}

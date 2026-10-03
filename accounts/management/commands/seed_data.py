@@ -358,15 +358,17 @@ class Command(BaseCommand):
                     fu_status = 'Completed'
                     sched_date = today - timedelta(days=random.randint(1, 2))
 
-                FollowUp.objects.create(
-                    call_record=call_rec,
-                    customer=cust,
-                    assigned_to=target_telecaller,
-                    scheduled_date=sched_date,
-                    scheduled_time=time(10 + (idx % 6), 30),
-                    status=fu_status,
-                    notes=f"Callback required for {cust.name} regarding pricing terms."
-                )
+                sched_time = time(10 + (idx % 6), 30)
+                if not FollowUp.objects.filter(customer=cust, scheduled_date=sched_date, scheduled_time=sched_time, status__in=['Pending', 'Overdue']).exists():
+                    FollowUp.objects.create(
+                        call_record=call_rec,
+                        customer=cust,
+                        assigned_to=target_telecaller,
+                        scheduled_date=sched_date,
+                        scheduled_time=sched_time,
+                        status=fu_status,
+                        notes=f"Callback required for {cust.name} regarding pricing terms."
+                    )
 
         # 6. Diverse In-App Notifications
         for tc in telecallers:

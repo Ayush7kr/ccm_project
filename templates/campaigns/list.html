@@ -42,42 +42,42 @@
       <thead>
         <tr>
           <th>Campaign Name</th>
-          <th>Type</th>
+          <th class="col-hide-md">Type</th>
           <th>Status</th>
-          <th>Duration</th>
+          <th class="col-hide-lg">Duration</th>
           <th>Customers</th>
-          <th>Completed Calls</th>
-          <th>Progress</th>
-          <th>Actions</th>
+          <th>Calls</th>
+          <th class="col-hide-sm">Progress</th>
+          <th style="text-align: right; width: 90px;">Actions</th>
         </tr>
       </thead>
       <tbody>
         {% for item in page_obj %}
         <tr>
           <td>
-            <a href="{% url 'campaign_detail' item.campaign.pk %}" style="font-weight: 600; color: var(--text-main);">
+            <a href="{% url 'campaign_detail' item.campaign.pk %}" style="font-weight: 700; color: var(--text-main); display: block;" class="cell-truncate">
               {{ item.campaign.name }}
             </a>
-            <div style="font-size: 0.75rem; color: var(--text-muted);">Created: {{ item.campaign.created_at|date:"M d, Y" }}</div>
+            <div style="font-size: 0.74rem; color: var(--text-muted);">Created: {{ item.campaign.created_at|date:"M d, Y" }}</div>
           </td>
-          <td><span class="badge badge-secondary">{{ item.campaign.campaign_type }}</span></td>
+          <td class="col-hide-md"><span class="badge badge-secondary" style="font-size: 0.7rem;">{{ item.campaign.campaign_type }}</span></td>
           <td>
             {% if item.campaign.status == 'Active' %}
-              <span class="badge badge-success"><i data-lucide="play-circle" style="width: 12px; height: 12px;"></i> Active</span>
+              <span class="badge badge-success" style="font-size: 0.72rem;"><i data-lucide="play-circle" style="width: 12px; height: 12px;"></i> Active</span>
             {% elif item.campaign.status == 'Paused' %}
-              <span class="badge badge-warning"><i data-lucide="pause-circle" style="width: 12px; height: 12px;"></i> Paused</span>
+              <span class="badge badge-warning" style="font-size: 0.72rem;"><i data-lucide="pause-circle" style="width: 12px; height: 12px;"></i> Paused</span>
             {% elif item.campaign.status == 'Completed' %}
-              <span class="badge badge-info"><i data-lucide="check-circle" style="width: 12px; height: 12px;"></i> Completed</span>
+              <span class="badge badge-info" style="font-size: 0.72rem;"><i data-lucide="check-circle" style="width: 12px; height: 12px;"></i> Completed</span>
             {% else %}
-              <span class="badge badge-secondary">{{ item.campaign.status }}</span>
+              <span class="badge badge-secondary" style="font-size: 0.72rem;">{{ item.campaign.status }}</span>
             {% endif %}
           </td>
-          <td style="font-size: 0.8rem; color: var(--text-muted);">
+          <td class="col-hide-lg" style="font-size: 0.78rem; color: var(--text-muted); white-space: nowrap;">
             {{ item.campaign.start_date|date:"M d" }} — {{ item.campaign.end_date|date:"M d, Y" }}
           </td>
           <td><strong>{{ item.total_customers }}</strong></td>
-          <td><span style="color: var(--success); font-weight: 600;">{{ item.completed_calls }}</span> / {{ item.campaign.target_calls }}</td>
-          <td style="width: 160px;">
+          <td style="font-size: 0.82rem;"><span style="color: var(--success); font-weight: 600;">{{ item.completed_calls }}</span> / {{ item.campaign.target_calls }}</td>
+          <td class="col-hide-sm" style="width: 130px;">
             <div style="display: flex; align-items: center; gap: 0.5rem;">
               <div style="flex: 1; height: 6px; background-color: var(--divider-color); border-radius: 3px; overflow: hidden;">
                 <div style="width: {{ item.progress_pct }}%; height: 100%; background-color: var(--primary);"></div>
@@ -85,8 +85,8 @@
               <span style="font-size: 0.75rem; font-weight: 600;">{{ item.progress_pct }}%</span>
             </div>
           </td>
-          <td>
-            <div style="display: flex; gap: 0.35rem;">
+          <td style="text-align: right; white-space: nowrap;">
+            <div style="display: flex; gap: 0.35rem; justify-content: flex-end;">
               <a href="{% url 'campaign_detail' item.campaign.pk %}" class="btn btn-outline btn-sm" title="View Details">
                 <i data-lucide="eye"></i>
               </a>

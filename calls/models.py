@@ -25,6 +25,12 @@ class CallRecord(models.Model):
 
     class Meta:
         ordering = ['-created_at']
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(duration__gte=0),
+                name='call_duration_non_negative'
+            ),
+        ]
 
     def __str__(self):
         return f"Call to {self.customer.name} - Status: {self.call_status}"
@@ -36,6 +42,14 @@ class QuestionResponse(models.Model):
     selected_options = models.JSONField(default=list, blank=True)
     rating = models.IntegerField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['call_record', 'question'],
+                name='unique_response_per_question'
+            ),
+        ]
 
     def __str__(self):
         return f"Response to Q{self.question.id} for Call #{self.call_record.id}"

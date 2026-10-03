@@ -23,12 +23,17 @@ def customer_list(request):
 
     customers = Customer.objects.all()
 
-    # If tele-caller, restrict to assigned customers
+    # If tele-caller, restrict to assigned campaign customers or assigned follow-ups
     if request.user.is_telecaller_user:
         assigned_customer_ids = CampaignCustomer.objects.filter(
             assigned_telecaller=request.user
         ).values_list('customer_id', flat=True)
-        customers = customers.filter(id__in=assigned_customer_ids)
+        followup_cust_ids = FollowUp.objects.filter(
+            assigned_to=request.user
+        ).values_list('customer_id', flat=True)
+        customers = customers.filter(
+            Q(id__in=assigned_customer_ids) | Q(id__in=followup_cust_ids)
+        )
 
     if search_query:
         customers = customers.filter(
@@ -51,19 +56,46 @@ def customer_list(request):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    # Attach assignment info for listing display
+    # Attach assignment info for listing display with efficient batch queries
     customer_list_data = []
-    for cust in page_obj:
-        links = CampaignCustomer.objects.filter(customer=cust).select_related('campaign', 'assigned_telecaller')
-        last_call = CallRecord.objects.filter(customer=cust).order_by('-created_at').first()
-        followup = FollowUp.objects.filter(customer=cust, status='Pending').order_by('scheduled_date').first()
+    page_customers = list(page_obj)
 
-        customer_list_data.append({
-            'customer': cust,
-            'campaign_links': links,
-            'last_call': last_call,
-            'pending_followup': followup
-        })
+    if page_customers:
+        from collections import defaultdict
+
+        # Batch fetch campaign links for the current page
+        links_qs = CampaignCustomer.objects.filter(
+            customer__in=page_customers
+        ).select_related('campaign', 'assigned_telecaller')
+        links_by_cust = defaultdict(list)
+        for link in links_qs:
+            links_by_cust[link.customer_id].append(link)
+
+        # Batch fetch latest calls for the current page
+        calls_qs = CallRecord.objects.filter(
+            customer__in=page_customers
+        ).order_by('-created_at')
+        last_calls = {}
+        for c in calls_qs:
+            if c.customer_id not in last_calls:
+                last_calls[c.customer_id] = c
+
+        # Batch fetch pending followups for the current page
+        fu_qs = FollowUp.objects.filter(
+            customer__in=page_customers, status='Pending'
+        ).order_by('scheduled_date', 'scheduled_time')
+        pending_fus = {}
+        for fu in fu_qs:
+            if fu.customer_id not in pending_fus:
+                pending_fus[fu.customer_id] = fu
+
+        for cust in page_customers:
+            customer_list_data.append({
+                'customer': cust,
+                'campaign_links': links_by_cust.get(cust.id, []),
+                'last_call': last_calls.get(cust.id, None),
+                'pending_followup': pending_fus.get(cust.id, None)
+            })
 
     campaigns = Campaign.objects.all()
 
@@ -123,7 +155,8 @@ def customer_detail(request, pk):
 
     if request.user.is_telecaller_user:
         is_assigned = CampaignCustomer.objects.filter(customer=customer, assigned_telecaller=request.user).exists()
-        if not is_assigned:
+        has_followup = FollowUp.objects.filter(customer=customer, assigned_to=request.user).exists()
+        if not is_assigned and not has_followup:
             messages.error(request, "You do not have access to this customer.")
             return redirect('customer_list')
 
@@ -285,6 +318,10 @@ def customer_import(request):
         seen_phones = set()
         existing_phones = set(Customer.objects.values_list('phone', flat=True))
 
+        if uploaded_file.size > 10 * 1024 * 1024:
+            messages.error(request, "File size exceeds maximum allowed limit of 10 MB.")
+            return redirect('customer_import')
+
         try:
             if filename.endswith('.csv'):
                 decoded_file = uploaded_file.read().decode('utf-8-sig')
@@ -326,7 +363,10 @@ def customer_import(request):
                         'is_valid': row_error is None,
                         'error': row_error
                     })
-            elif filename.endswith(('.xlsx', '.xls')):
+            elif filename.endswith('.xls'):
+                messages.error(request, "Legacy Excel (.xls) format is not supported. Please save your spreadsheet as .xlsx or .csv and upload again.")
+                return redirect('customer_import')
+            elif filename.endswith('.xlsx'):
                 import openpyxl
                 wb = openpyxl.load_workbook(uploaded_file, data_only=True)
                 sheet = wb.active
@@ -400,6 +440,10 @@ def customer_assign(request):
         campaign = get_object_or_404(Campaign, pk=campaign_id)
         telecaller = get_object_or_404(User, pk=telecaller_id, role='TELE_CALLER')
 
+        if campaign.status not in ['Draft', 'Active']:
+            messages.error(request, f"Cannot assign customers to campaign '{campaign.name}' with status '{campaign.status}'. Only Draft or Active campaigns accept assignments.")
+            return redirect('customer_assign')
+
         if not telecaller.is_active:
             messages.error(request, f"Cannot assign customers to inactive tele-caller '{telecaller.username}'.")
             return redirect('customer_assign')
@@ -411,7 +455,9 @@ def customer_assign(request):
         assigned_count = 0
         with transaction.atomic():
             for cust_id in customer_ids:
-                customer = Customer.objects.get(pk=cust_id)
+                customer = Customer.objects.filter(pk=cust_id).first()
+                if not customer:
+                    continue
                 link, created = CampaignCustomer.objects.get_or_create(
                     campaign=campaign,
                     customer=customer

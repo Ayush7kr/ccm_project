@@ -6,15 +6,18 @@ This document details the automated test suite, test structure, command executio
 
 ## 1. Automated Test Suite Overview
 
-CCM features a comprehensive automated test suite consisting of **57 unit and integration tests** spanning all major subsystems:
+CCM features a comprehensive automated test suite consisting of **134 unit and integration tests** (0 failures, 0 errors) spanning all major subsystems:
 
 | Test Module | Test Class / Count | Focus Areas |
 | :--- | :--- | :--- |
-| `accounts/tests.py` | `AccountTests` (21 tests) | Authentication, role selection, role mismatch validation, password security, password reset tokens, tele-caller roster, deactivated account rejection, home page elements. |
+| `accounts/tests.py` | `AccountTests` (28 tests) | Authentication, role selection, role mismatch validation, password security, password reset tokens, tele-caller roster, deactivated account rejection, home page elements, tele-caller self-registration workflow, field validations, and in-app notifications. |
+| `accounts/tests_security.py` | `SecurityTests` (31 tests) | RBAC decorator enforcement (`@admin_required`, `@telecaller_required`), negative authorization, tele-caller IDOR isolation, and cross-role boundary enforcement. |
 | `analytics/tests.py` | `AnalyticsEngineTests`, `AnalyticsViewTests`, `ReportExportTests` (15 tests) | Analytics engine calculation correctness, date filters, KPI accuracy, outcome aggregations, PDF export generation, Excel export generation, record preview calculations. |
+| `analytics/tests_task_queue.py` | `TaskQueueAndStatusTests` (18 tests) | Tele-caller task queue state discrimination, "Start Call" vs "Handle Follow-up" rendering, assignment status transitions, and campaign KPI delineation. |
 | `campaigns/tests.py` | `CampaignTests` (11 tests) | Campaign lifecycle, questionnaire building, question types, tele-caller assignment filtering, target progress calculations. |
-| `customers/tests.py` | `CustomerTests` (5 tests) | Customer CRUD, search, filtering, CSV import row validation, duplicate phone checks. |
+| `customers/tests.py` | `CustomerTests` (7 tests) | Customer CRUD, search, filtering, CSV/XLSX import row validation, duplicate phone checks. |
 | `calls/tests.py` | `CallTests` (5 tests) | Live call recording, question response storage, callback scheduling, overdue detection, assignment status updates. |
+| `calls/tests_audit_hardening.py` | `AuditHardeningTests` (20 tests) | Admin call console 403 prevention, follow-up state/action matrix dropdowns, follow-up re-completion and cancellation rejection, follow-up rescheduling, duration bounds, file size limits, .xls rejection, questionnaire type validation, report filter alignment, and duplicate follow-up prevention. |
 
 ---
 

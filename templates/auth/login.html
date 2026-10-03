@@ -137,7 +137,15 @@
             </button>
           </div>
 
-          <div style="text-align: center; margin-top: 1.75rem; padding-top: 1.25rem; border-top: 1px solid var(--divider-color);">
+          <!-- Register Tele-caller Callout -->
+          <div style="margin-top: 1.25rem; padding: 0.85rem 1rem; background: var(--bg-secondary); border: 1px dashed var(--border-color); border-radius: var(--radius-md); text-align: center;">
+            <span style="font-size: 0.825rem; color: var(--text-muted);">New tele-caller joining the team?</span>
+            <a href="{% url 'telecaller_register' %}" style="font-size: 0.825rem; font-weight: 700; color: var(--primary); text-decoration: none; margin-left: 0.35rem; display: inline-flex; align-items: center; gap: 0.25rem;">
+              Register as Tele-caller <i data-lucide="arrow-right" style="width: 14px; height: 14px;"></i>
+            </a>
+          </div>
+
+          <div style="text-align: center; margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--divider-color);">
             <a href="{% url 'home' %}" style="font-size: 0.85rem; color: var(--text-muted); text-decoration: none;">
               &larr; Return to Public Overview
             </a>
@@ -214,10 +222,18 @@
           </form>
 
           <!-- Back to Role Selection -->
-          <div style="text-align: center; margin-top: 1.5rem;">
+          <div style="text-align: center; margin-top: 1.25rem;">
             <button type="button" id="changeRoleFooterBtn" style="background: none; border: none; font-size: 0.85rem; color: var(--text-muted); cursor: pointer; text-decoration: underline;">
               Need to switch user role?
             </button>
+          </div>
+
+          <!-- Register Link for Tele-callers -->
+          <div style="text-align: center; margin-top: 1rem; padding-top: 0.85rem; border-top: 1px solid var(--divider-color);">
+            <span style="font-size: 0.825rem; color: var(--text-muted);">Don't have a tele-caller account?</span>
+            <a href="{% url 'telecaller_register' %}" style="font-size: 0.825rem; font-weight: 600; color: var(--primary); margin-left: 0.25rem;">
+              Register here &rarr;
+            </a>
           </div>
         </div>
       </div>

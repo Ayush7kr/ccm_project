@@ -40,6 +40,8 @@ def parse_date_range(request):
         try:
             sd = datetime.strptime(date_from, '%Y-%m-%d').date()
             ed = datetime.strptime(date_to, '%Y-%m-%d').date()
+            if sd > ed:
+                sd, ed = ed, sd
             return sd, ed, 'Custom Range'
         except ValueError:
             pass
@@ -164,9 +166,11 @@ def compute_campaign_performance(campaign_id=None, start_date=None, end_date=Non
     return results
 
 
-def compute_telecaller_performance(campaign_id=None, start_date=None, end_date=None):
+def compute_telecaller_performance(campaign_id=None, start_date=None, end_date=None, telecaller_id=None):
     """Compute per-telecaller operational metrics."""
     telecallers = User.objects.filter(role='TELE_CALLER').order_by('first_name', 'username')
+    if telecaller_id:
+        telecallers = telecallers.filter(id=telecaller_id)
     results = []
 
     for tc in telecallers:

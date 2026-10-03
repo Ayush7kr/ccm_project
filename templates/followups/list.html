@@ -3,6 +3,11 @@
 {% block title %}Follow-ups Management — CCM{% endblock %}
 {% block page_title %}Scheduled Follow-ups{% endblock %}
 
+{% block extra_css %}
+<!-- Action dropdown styles defined globally in main.css -->
+{% endblock %}
+
+
 {% block content %}
 <div class="card" style="margin-bottom: 1.5rem;">
   <div class="card-header" style="flex-wrap: wrap; gap: 1rem;">
@@ -12,23 +17,32 @@
     </div>
   </div>
 
-  <form method="GET" action="{% url 'followup_list' %}" style="display: flex; gap: 1rem; margin-bottom: 1.25rem; flex-wrap: wrap;">
-    <div style="width: 220px;">
-      <select name="status" class="form-select">
-        <option value="">All Follow-up Statuses</option>
-        <option value="Pending" {% if status_filter == 'Pending' %}selected{% endif %}>Pending</option>
-        <option value="Overdue" {% if status_filter == 'Overdue' %}selected{% endif %}>Overdue (Action Required)</option>
-        <option value="Completed" {% if status_filter == 'Completed' %}selected{% endif %}>Completed</option>
-        <option value="Cancelled" {% if status_filter == 'Cancelled' %}selected{% endif %}>Cancelled</option>
-      </select>
+  <!-- Status Filter Pills -->
+  <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1.25rem;">
+    <div style="display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center;">
+      <a href="{% url 'followup_list' %}" class="btn btn-sm {% if not status_filter %}btn-primary{% else %}btn-secondary{% endif %}" style="font-size: 0.8rem;">
+        All
+      </a>
+      <a href="{% url 'followup_list' %}?status=Pending" class="btn btn-sm {% if status_filter == 'Pending' %}btn-primary{% else %}btn-secondary{% endif %}" style="font-size: 0.8rem;">
+        Pending
+      </a>
+      <a href="{% url 'followup_list' %}?status=Overdue" class="btn btn-sm {% if status_filter == 'Overdue' %}btn-danger{% else %}btn-secondary{% endif %}" style="font-size: 0.8rem;">
+        Overdue
+      </a>
+      <a href="{% url 'followup_list' %}?status=Completed" class="btn btn-sm {% if status_filter == 'Completed' %}btn-primary{% else %}btn-secondary{% endif %}" style="font-size: 0.8rem;">
+        Completed
+      </a>
+      <a href="{% url 'followup_list' %}?status=Cancelled" class="btn btn-sm {% if status_filter == 'Cancelled' %}btn-primary{% else %}btn-secondary{% endif %}" style="font-size: 0.8rem;">
+        Cancelled
+      </a>
     </div>
-    <button type="submit" class="btn btn-secondary">
-      <i data-lucide="filter"></i> Filter
-    </button>
+
     {% if status_filter %}
-      <a href="{% url 'followup_list' %}" class="btn btn-outline">Clear Filter</a>
+      <a href="{% url 'followup_list' %}" class="btn btn-sm btn-outline" style="font-size: 0.8rem;">
+        <i data-lucide="x" style="width: 13px; height: 13px;"></i> Clear Filter
+      </a>
     {% endif %}
-  </form>
+  </div>
 
   <div class="table-responsive">
     <table class="table">
@@ -36,42 +50,47 @@
         <tr>
           <th>Customer</th>
           <th>Campaign</th>
-          <th>Assigned Tele-caller</th>
-          <th>Scheduled Date & Time</th>
+          <th class="col-hide-lg">Assigned To</th>
+          <th>Scheduled</th>
           <th>Status</th>
-          <th>Reminder Notes</th>
-          <th>Original Call</th>
-          <th style="text-align: right;">Action</th>
+          <th class="col-hide-md">Reminder Notes</th>
+          <th class="col-hide-xl">Original Call</th>
+          <th style="text-align: right; width: 110px;">Action</th>
         </tr>
       </thead>
       <tbody>
         {% for fu in followups %}
         <tr {% if fu.status == 'Overdue' %}style="background-color: var(--danger-light); border-left: 3px solid var(--danger);"{% endif %}>
           <td>
-            <a href="{% url 'customer_detail' fu.customer.pk %}" style="font-weight: 700; text-decoration: none; color: var(--text-main);">
+            <a href="{% url 'customer_detail' fu.customer.pk %}" style="font-weight: 700; text-decoration: none; color: var(--text-main); display: block;" class="cell-truncate">
               {{ fu.customer.name }}
             </a>
-            <div style="font-size: 0.75rem; color: var(--text-muted);">{{ fu.customer.phone }}</div>
+            <div style="font-size: 0.74rem; color: var(--text-muted);">{{ fu.customer.phone }}</div>
           </td>
           <td>
-            <span style="font-weight: 600; font-size: 0.85rem;">
+            <span style="font-weight: 600; font-size: 0.82rem; display: block;" class="cell-truncate-sm" title="{{ fu.call_record.campaign.name|default:'General Outreach' }}">
               {{ fu.call_record.campaign.name|default:"General Outreach" }}
             </span>
+            {% if fu.call_record %}
+              <span class="badge badge-secondary col-hide-xl" style="font-size: 0.68rem; padding: 0.1rem 0.4rem; margin-top: 2px;">
+                Call #{{ fu.call_record.id }}
+              </span>
+            {% endif %}
           </td>
-          <td>
-            <span style="font-size: 0.85rem;">{{ fu.assigned_to.get_full_name|default:fu.assigned_to.username }}</span>
+          <td class="col-hide-lg">
+            <span style="font-size: 0.82rem;">{{ fu.assigned_to.get_full_name|default:fu.assigned_to.username }}</span>
           </td>
-          <td>
-            <strong style="color: {% if fu.status == 'Overdue' %}var(--danger){% else %}var(--text-main){% endif %}; font-size: 0.85rem; display: block;">
+          <td style="white-space: nowrap;">
+            <strong style="color: {% if fu.status == 'Overdue' %}var(--danger){% else %}var(--text-main){% endif %}; font-size: 0.82rem; display: block;">
               {{ fu.scheduled_date|date:"M d, Y" }}
             </strong>
-            <span style="font-size: 0.75rem; color: var(--text-muted);">at {{ fu.scheduled_time }}</span>
+            <span style="font-size: 0.74rem; color: var(--text-muted);">at {{ fu.scheduled_time }}</span>
           </td>
           <td>
             {% if fu.status == 'Completed' %}
               <span class="badge badge-success">Completed</span>
             {% elif fu.status == 'Overdue' %}
-              <span class="badge badge-danger" style="font-weight: 700; font-size: 0.75rem; display: inline-flex; align-items: center; gap: 3px;">
+              <span class="badge badge-danger" style="font-weight: 700; font-size: 0.72rem; display: inline-flex; align-items: center; gap: 3px;">
                 <i data-lucide="alert-triangle" style="width: 12px; height: 12px;"></i> Overdue
               </span>
             {% elif fu.status == 'Cancelled' %}
@@ -80,38 +99,65 @@
               <span class="badge badge-warning">Pending</span>
             {% endif %}
           </td>
-          <td style="font-size: 0.85rem; max-width: 220px;">{{ fu.notes|default:"No notes entered." }}</td>
-          <td>
+          <td class="col-hide-md">
+            <span class="cell-truncate" title="{{ fu.notes|default:'No notes entered.' }}" style="font-size: 0.8rem; color: var(--text-muted);">
+              {{ fu.notes|default:"No notes entered." }}
+            </span>
+          </td>
+          <td class="col-hide-xl">
             {% if fu.call_record %}
-              <span class="badge badge-secondary" style="font-size: 0.75rem;">
+              <span class="badge badge-secondary" style="font-size: 0.72rem;">
                 Call #{{ fu.call_record.id }} ({{ fu.call_record.call_status }})
               </span>
             {% else %}
               <span style="font-size: 0.75rem; color: var(--text-muted);">&mdash;</span>
             {% endif %}
           </td>
-          <td style="text-align: right;">
+          <td style="text-align: right; white-space: nowrap;">
             {% if fu.status == 'Pending' or fu.status == 'Overdue' %}
-              <div style="display: inline-flex; gap: 0.35rem; align-items: center;">
-                <form action="{% url 'followup_complete' fu.pk %}" method="POST" style="margin: 0;">
-                  {% csrf_token %}
-                  <button type="submit" class="btn btn-primary btn-sm" title="Mark as completed">
-                    <i data-lucide="check"></i> Complete
+              <div class="action-dropdown" style="display: inline-block;">
+                <button type="button" 
+                        id="action-btn-{{ fu.pk }}" 
+                        class="action-dropdown-btn" 
+                        onclick="toggleActionDropdown(event, '{{ fu.pk }}')" 
+                        aria-haspopup="true" 
+                        aria-expanded="false" 
+                        title="Manage callback actions">
+                  <i data-lucide="sliders-horizontal" class="action-btn-icon-lead"></i>
+                  <span>Actions</span>
+                  <i data-lucide="chevron-down" class="action-btn-chevron"></i>
+                </button>
+                <div id="action-menu-{{ fu.pk }}" class="action-dropdown-menu" role="menu" style="display: none;">
+                  <div class="action-dropdown-header">Manage Callback</div>
+                  <form action="{% url 'followup_complete' fu.pk %}" method="POST" class="action-dropdown-form">
+                    {% csrf_token %}
+                    <button type="submit" class="action-dropdown-item item-complete" role="menuitem" title="Mark follow-up task as completed">
+                      <span class="action-icon-pill icon-pill-success"><i data-lucide="check"></i></span>
+                      <span>Mark Complete</span>
+                    </button>
+                  </form>
+                  <button type="button" class="action-dropdown-item item-reschedule" role="menuitem" title="Reschedule callback date and time" onclick="openRescheduleModal('{{ fu.pk }}', '{{ fu.customer.name|escapejs }}', '{{ fu.scheduled_date|date:"Y-m-d" }}', '{{ fu.scheduled_time|time:"H:i" }}'); closeAllDropdowns();">
+                    <span class="action-icon-pill icon-pill-primary"><i data-lucide="calendar"></i></span>
+                    <span>Reschedule</span>
                   </button>
-                </form>
-                <form action="{% url 'followup_cancel' fu.pk %}" method="POST" style="margin: 0;">
-                  {% csrf_token %}
-                  <button type="submit" class="btn btn-outline btn-sm" title="Cancel this follow-up" onclick="return confirm('Cancel this follow-up reminder?');" style="color: var(--danger); border-color: var(--border-color);">
-                    <i data-lucide="x"></i> Cancel
-                  </button>
-                </form>
+                  <div class="action-dropdown-divider"></div>
+                  <form action="{% url 'followup_cancel' fu.pk %}" method="POST" class="action-dropdown-form">
+                    {% csrf_token %}
+                    <button type="submit" class="action-dropdown-item item-cancel" role="menuitem" title="Cancel this follow-up reminder" onclick="return confirm('Cancel this follow-up reminder for {{ fu.customer.name|escapejs }}?');">
+                      <span class="action-icon-pill icon-pill-danger"><i data-lucide="x"></i></span>
+                      <span>Cancel</span>
+                    </button>
+                  </form>
+                </div>
               </div>
             {% elif fu.status == 'Completed' %}
-              <span style="font-size: 0.8rem; color: var(--success); font-weight: 600; display: inline-flex; align-items: center; gap: 3px;">
-                <i data-lucide="check-circle" style="width: 14px; height: 14px;"></i> Done
+              <span class="badge badge-success" style="display: inline-flex; align-items: center; gap: 4px; font-size: 0.75rem; padding: 4px 8px;">
+                <i data-lucide="check-circle" style="width: 12px; height: 12px;"></i> Completed
               </span>
             {% else %}
-              <span style="font-size: 0.8rem; color: var(--text-muted);">Cancelled</span>
+              <span class="badge badge-secondary" style="display: inline-flex; align-items: center; gap: 4px; font-size: 0.75rem; padding: 4px 8px;">
+                <i data-lucide="x-circle" style="width: 12px; height: 12px;"></i> Cancelled
+              </span>
             {% endif %}
           </td>
         </tr>
@@ -130,4 +176,132 @@
     </table>
   </div>
 </div>
+
+<!-- Reschedule Follow-up Modal -->
+<div id="rescheduleModal" style="display: none; position: fixed; inset: 0; background-color: rgba(0, 0, 0, 0.5); z-index: 1050; align-items: center; justify-content: center; padding: 1rem;">
+  <div class="card" style="max-width: 440px; width: 100%; box-shadow: var(--shadow-lg); border: 1px solid var(--border-color);">
+    <div class="card-header" style="padding-bottom: 0.5rem;">
+      <h3 class="card-title" style="display: flex; align-items: center; gap: 0.5rem; font-size: 1.1rem;">
+        <i data-lucide="calendar" style="width: 18px; height: 18px; color: var(--primary);"></i> Reschedule Follow-up
+      </h3>
+      <button type="button" onclick="closeRescheduleModal();" style="background: none; border: none; font-size: 1.25rem; color: var(--text-muted); cursor: pointer;">&times;</button>
+    </div>
+    <form id="rescheduleForm" method="POST" action="">
+      {% csrf_token %}
+      <p id="rescheduleCustomerText" style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+        Setting a new callback reminder date and time.
+      </p>
+      <div class="form-group" style="margin-bottom: 0.85rem;">
+        <label for="reschedule_date" style="font-weight: 600; font-size: 0.85rem;">New Scheduled Date *</label>
+        <input type="date" id="reschedule_date" name="scheduled_date" class="form-control" required style="font-size: 0.9rem;">
+      </div>
+      <div class="form-group" style="margin-bottom: 0.85rem;">
+        <label for="reschedule_time" style="font-weight: 600; font-size: 0.85rem;">New Scheduled Time *</label>
+        <input type="time" id="reschedule_time" name="scheduled_time" class="form-control" required style="font-size: 0.9rem;">
+      </div>
+      <div class="form-group" style="margin-bottom: 1.25rem;">
+        <label for="reschedule_notes" style="font-weight: 600; font-size: 0.85rem;">Update Notes (Optional)</label>
+        <textarea id="reschedule_notes" name="notes" class="form-textarea" rows="2" placeholder="Reason for rescheduling or additional callback notes..."></textarea>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+        <button type="button" class="btn btn-secondary" onclick="closeRescheduleModal();">Cancel</button>
+        <button type="submit" class="btn btn-primary">
+          <i data-lucide="calendar-check"></i> Save Reschedule
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  function toggleActionDropdown(event, id) {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    const menu = document.getElementById('action-menu-' + id);
+    const btn = document.getElementById('action-btn-' + id);
+    if (!menu || !btn) return;
+    
+    const isCurrentlyOpen = menu.classList.contains('show');
+    closeAllDropdowns();
+    
+    if (!isCurrentlyOpen) {
+      // Force strict column flex layout
+      menu.classList.add('show');
+      menu.style.display = 'flex';
+      menu.style.flexDirection = 'column';
+      menu.style.position = 'fixed';
+      menu.style.zIndex = '9999';
+      btn.classList.add('active');
+      btn.setAttribute('aria-expanded', 'true');
+      
+      const rect = btn.getBoundingClientRect();
+      const menuWidth = 200;
+      const menuHeight = 165;
+      
+      // Vertical placement: place directly below the button
+      const spaceBelow = window.innerHeight - rect.bottom;
+      if (spaceBelow < menuHeight && rect.top > menuHeight) {
+        menu.style.top = (rect.top - menuHeight - 4) + 'px';
+      } else {
+        menu.style.top = (rect.bottom + 4) + 'px';
+      }
+      
+      // Horizontal placement: right edge aligns with the button's right edge, clamped inside viewport
+      let rightOffset = window.innerWidth - rect.right;
+      if (rightOffset < 12) rightOffset = 12;
+      if (window.innerWidth - rightOffset - menuWidth < 12) {
+        rightOffset = window.innerWidth - menuWidth - 12;
+      }
+      menu.style.right = rightOffset + 'px';
+      menu.style.left = 'auto';
+      
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+  }
+
+  function closeAllDropdowns() {
+    document.querySelectorAll('.action-dropdown-menu').forEach(m => {
+      m.classList.remove('show');
+      m.style.display = 'none';
+    });
+    document.querySelectorAll('.action-dropdown-btn.active').forEach(b => {
+      b.classList.remove('active');
+      b.setAttribute('aria-expanded', 'false');
+    });
+  }
+
+  document.addEventListener('click', closeAllDropdowns);
+  window.addEventListener('scroll', closeAllDropdowns, true);
+  window.addEventListener('resize', closeAllDropdowns);
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      closeAllDropdowns();
+      closeRescheduleModal();
+    }
+  });
+
+  function openRescheduleModal(pk, customerName, currentDate, currentTime) {
+    const modal = document.getElementById('rescheduleModal');
+    const form = document.getElementById('rescheduleForm');
+    const text = document.getElementById('rescheduleCustomerText');
+    const dateInput = document.getElementById('reschedule_date');
+    const timeInput = document.getElementById('reschedule_time');
+
+    if (modal && form) {
+      form.action = `/followups/${pk}/reschedule/`;
+      if (text) text.innerHTML = `Rescheduling callback with <strong>${customerName}</strong>.`;
+      if (dateInput) dateInput.value = currentDate || '';
+      if (timeInput) timeInput.value = currentTime || '';
+      modal.style.display = 'flex';
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+  }
+
+  function closeRescheduleModal() {
+    const modal = document.getElementById('rescheduleModal');
+    if (modal) modal.style.display = 'none';
+  }
+</script>
 {% endblock %}

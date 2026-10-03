@@ -6,11 +6,14 @@ This document provides a comprehensive overview of all functional modules and us
 
 ## 1. Public SaaS Landing Page (`/`)
 
-- **Hero Banner**: High-impact SaaS introduction communicating value propositions with primary CTAs: *"Get Started"*, *"Explore Capabilities"*, and *"Sign In"*.
-- **"Explore Capabilities"**: Smoothly scrolls to the interactive feature cards section (`#features`).
-- **Capabilities Matrix**: 8 interactive cards detailing Campaign Management, Customer Directory, Live Calling Console, Questionnaires, Follow-up Tracking, Operational Analytics, Report Center, and Role-Based Access.
-- **Workflow Steps**: Visual 3-step walkthrough: *1. Setup & Ingestion* ➔ *2. Targeted Calling & Logging* ➔ *3. Insights & Reporting*.
-- **Role Breakdown**: Clear comparison cards for System Administrators vs Tele-callers.
+- **Hero Banner**: High-impact SaaS introduction communicating value propositions with primary CTAs: *"Sign In"*, *"Register as Tele-caller"*, *"Explore Capabilities"*, and *"Platform Tour"*.
+- **Simulated Calling Console Mockup**: Interactive preview featuring a real-time ticking stopwatch timer, animated audio wave equalizer, outcome buttons, and interactive survey rating widget.
+- **"Explore Capabilities"**: Smoothly scrolls to the core architecture section (`#features`).
+- **Interactive Platform Tour (`#showcase`)**: 4-tab interactive walkthrough displaying Live Dialing & Stopwatch Logging, Dynamic Survey Engine, Smart Overdue Follow-up Tracker, and Audit-Grade Analytics.
+- **Capabilities Matrix**: 6 comprehensive feature boxes detailing Campaign Management, Customer & Lead Directory, Live Calling Console, Dynamic Questionnaires, Follow-up Tracking, and Analytics & Report Center.
+- **Operational Workflow Steps (`#how-it-works`)**: Visual 3-step walkthrough: *1. Configure & Ingest* ➔ *2. Dial, Time & Log* ➔ *3. Analyze & Export*.
+- **Role Breakdown (`#roles`)**: Dedicated cards for System Administrator (ADMIN) and Tele-caller Agent (TELE_CALLER).
+- **FAQ Accordion (`#faq`)**: Collapsible interactive accordion answering common platform and operational questions.
 - **Theme Switcher**: Instant light/dark mode toggling, persisted via `localStorage`.
 
 ![Public Landing Page](screenshots/landing_page.png)
@@ -25,8 +28,21 @@ This document provides a comprehensive overview of all functional modules and us
 - **Password Visibility**: Eye icon toggle to reveal/hide password input.
 - **Remember Me**: Configures session expiry (browser session vs persistent session).
 - **Navigation Controls**: Clean `← Back to Home` and `← Change Role` buttons.
+- **Tele-caller Onboarding Link**: Integrated callout linking directly to the registration page.
 
 ![Role Selection and Login](screenshots/login_role_selection.png)
+
+---
+
+## 2.1. Tele-caller Self-Registration (`/register/`)
+
+- **Dedicated Onboarding Portal**: Split-screen responsive interface tailored for prospective tele-callers.
+- **Strict Role Pinning**: Automatically and securely assigns `role='TELE_CALLER'` to prevent privilege escalation.
+- **Robust Field Validation**: Server-side checks for unique username, regex character rules, required names, valid unique email, phone number, password confirmation, and terms acceptance.
+- **Dual Notification Dispatch**:
+  - Automatically dispatches a *Welcome to CCM!* in-app notification to the newly registered agent.
+  - Automatically alerts all active Administrators with an in-app notification: *New Tele-caller Registered*.
+- **Instant Workspace Access**: Automatically logs in newly registered users and redirects them directly to their dedicated tele-caller workspace dashboard (`/dashboard/`).
 
 ---
 
@@ -79,7 +95,7 @@ This document provides a comprehensive overview of all functional modules and us
 
 - **Search & Filtering**: Instant search across customer name, phone, email, and company, with campaign and status filters.
 - **CSV & Excel Import Engine**:
-  - Ingests `.csv`, `.xlsx`, and `.xls` files.
+  - Ingests `.csv` and modern `.xlsx` spreadsheet files.
   - Validates missing names, phone formats, and duplicate phone numbers within the file and against the existing database.
   - Interactive pre-import review table highlighting valid vs invalid rows.
   - Automatic enrollment into selected target campaigns.
@@ -110,7 +126,10 @@ This document provides a comprehensive overview of all functional modules and us
 ## 9. Follow-up & Callback Management (`/followups/`)
 
 - **Automated Overdue Detection**: Background and on-demand detection converting pending follow-ups to `Overdue` once the scheduled date/time passes.
-- **Task Management**: Mark follow-ups as `Completed` or `Cancelled`.
+- **Task Management**:
+  - **Mark Complete**: Mark follow-up reminders as completed once handled. Re-completion of already completed tasks is strictly prevented.
+  - **Reschedule Callback**: Overdue or pending callbacks can be rescheduled directly via the UI modal with an updated date/time.
+  - **Cancel Follow-up**: Cancel unnecessary reminders with state transition validation.
 - **Data Isolation**: Tele-callers only see their own scheduled callbacks; administrators have organization-wide visibility.
 
 ![Follow-up Callback Queue](screenshots/followups_list.png)

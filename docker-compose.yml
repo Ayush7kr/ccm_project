@@ -6,15 +6,15 @@ services:
     container_name: ccm_postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ccm_db
-      POSTGRES_USER: ccm_user
-      POSTGRES_PASSWORD: ccm_secure_password
+      POSTGRES_DB: ${DB_NAME:-ccm_db}
+      POSTGRES_USER: ${DB_USER:-ccm_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ccm_user -d ccm_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-ccm_user} -d ${DB_NAME:-ccm_db}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -32,12 +32,11 @@ services:
       - media_volume:/app/media
     ports:
       - "8000:8000"
+    env_file:
+      - .env
     environment:
       - DEBUG=False
-      - SECRET_KEY=prod-insecure-docker-secret-key-change-in-production
-      - ALLOWED_HOSTS=localhost,127.0.0.1,web
-      - DATABASE_URL=postgresql://ccm_user:ccm_secure_password@db:5432/ccm_db
-      - LOG_LEVEL=INFO
+      - DATABASE_URL=postgresql://${DB_USER:-ccm_user}:${DB_PASSWORD}@db:5432/${DB_NAME:-ccm_db}
     depends_on:
       db:
         condition: service_healthy
@@ -46,3 +45,4 @@ volumes:
   postgres_data:
   static_volume:
   media_volume:
+

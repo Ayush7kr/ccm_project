@@ -1,0 +1,406 @@
+{% extends 'base.html' %}
+
+{% block title %}Register as Tele-caller — CCM Campaign Call Manager{% endblock %}
+
+{% block auth_content %}
+<div class="auth-page-container">
+  <!-- Top Navigation: Back to Home -->
+  <div class="auth-top-bar">
+    <a href="{% url 'home' %}" class="btn-back-home">
+      <i data-lucide="arrow-left" style="width: 18px; height: 18px;"></i>
+      <span>Back to Home</span>
+    </a>
+  </div>
+
+  <div class="auth-split-wrapper">
+    <!-- Left Section: Brand & Information (Desktop) -->
+    <div class="auth-brand-side">
+      <div class="auth-brand-header">
+        <div class="brand-icon" style="width: 44px; height: 44px; font-size: 1.25rem;">CCM</div>
+        <div>
+          <div style="font-weight: 800; font-size: 1.35rem; color: #ffffff; letter-spacing: -0.5px;">CallManager</div>
+          <div style="font-size: 0.75rem; color: #60a5fa; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Tele-caller Onboarding</div>
+        </div>
+      </div>
+
+      <div class="auth-brand-body">
+        <h1 class="auth-brand-headline">
+          Join the <span>Calling Workforce.</span>
+        </h1>
+        <p class="auth-brand-desc">
+          Sign up as a CCM tele-caller to receive customer assignments, utilize live calling timers, record structured customer survey responses, and manage scheduled callback reminders.
+        </p>
+
+        <div class="auth-feature-list">
+          <div class="auth-feature-item">
+            <div class="auth-feat-icon blue">
+              <i data-lucide="headphones" style="width: 20px; height: 20px;"></i>
+            </div>
+            <div>
+              <div class="auth-feat-title">Dedicated Caller Workspace</div>
+              <div class="auth-feat-desc">Immediate access to your assigned customer queue with zero distractions or interference.</div>
+            </div>
+          </div>
+
+          <div class="auth-feature-item">
+            <div class="auth-feat-icon green">
+              <i data-lucide="phone-call" style="width: 20px; height: 20px;"></i>
+            </div>
+            <div>
+              <div class="auth-feat-title">Live Calling Console & Stopwatch</div>
+              <div class="auth-feat-desc">Track precise call duration in seconds, log customer dispositions, and save survey responses.</div>
+            </div>
+          </div>
+
+          <div class="auth-feature-item">
+            <div class="auth-feat-icon yellow">
+              <i data-lucide="calendar-clock" style="width: 20px; height: 20px;"></i>
+            </div>
+            <div>
+              <div class="auth-feat-title">Smart Callback Reminders</div>
+              <div class="auth-feat-desc">Keep track of upcoming callbacks with automated overdue detection and instant reschedule tools.</div>
+            </div>
+          </div>
+
+          <div class="auth-feature-item">
+            <div class="auth-feat-icon cyan">
+              <i data-lucide="shield-check" style="width: 20px; height: 20px;"></i>
+            </div>
+            <div>
+              <div class="auth-feat-title">Strict Data Isolation & Security</div>
+              <div class="auth-feat-desc">Your workload is strictly assigned to your personal account with encrypted password storage.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="auth-brand-footer">
+        <div>&copy; {% now "Y" %} CCM. Centralized Customer Communication Management.</div>
+      </div>
+    </div>
+
+    <!-- Right Section: Registration Form Card -->
+    <div class="auth-form-side">
+      <div class="auth-card">
+        <!-- Messages Notification -->
+        {% include 'components/messages.html' %}
+
+        {% if errors.general %}
+          <div class="alert alert-danger" style="margin-bottom: 1.25rem; display: flex; align-items: flex-start; gap: 0.75rem;">
+            <i data-lucide="alert-circle" style="width: 20px; height: 20px; flex-shrink: 0; margin-top: 2px;"></i>
+            <div style="flex: 1;">{{ errors.general }}</div>
+          </div>
+        {% endif %}
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--divider-color);">
+          <a href="{% url 'login' %}" class="btn-change-role">
+            <i data-lucide="arrow-left" style="width: 14px; height: 14px;"></i>
+            <span>Sign In</span>
+          </a>
+          <span class="badge badge-info" style="font-size: 0.75rem; display: inline-flex; align-items: center; gap: 4px;">
+            <i data-lucide="user-check" style="width: 12px; height: 12px;"></i> Tele-caller Registration
+          </span>
+        </div>
+
+        <div style="margin-bottom: 1.25rem;">
+          <h2 style="font-size: 1.45rem; font-weight: 800; color: var(--text-main); letter-spacing: -0.5px;">
+            Create Your Account
+          </h2>
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem;">
+            Register to join the campaign tele-calling team
+          </p>
+        </div>
+
+        <form action="{% url 'telecaller_register' %}" method="POST" id="registerForm">
+          {% csrf_token %}
+
+          <!-- Name Grid -->
+          <div class="responsive-grid-1-1" style="gap: 0.75rem; margin-bottom: 1rem;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="first_name" style="display: block; font-size: 0.825rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--text-main);">First Name *</label>
+              <div style="position: relative;">
+                <input type="text" id="first_name" name="first_name" class="form-control" value="{{ form_data.first_name|default:'' }}" placeholder="e.g. John" required style="padding-left: 2.3rem;">
+                <i data-lucide="user" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--text-muted);"></i>
+              </div>
+              {% if errors.first_name %}
+                <div style="color: var(--danger); font-size: 0.75rem; margin-top: 0.25rem;">{{ errors.first_name }}</div>
+              {% endif %}
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="last_name" style="display: block; font-size: 0.825rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--text-main);">Last Name</label>
+              <div style="position: relative;">
+                <input type="text" id="last_name" name="last_name" class="form-control" value="{{ form_data.last_name|default:'' }}" placeholder="e.g. Doe" style="padding-left: 2.3rem;">
+                <i data-lucide="user" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--text-muted);"></i>
+              </div>
+            </div>
+          </div>
+
+          <!-- Username -->
+          <div class="form-group" style="margin-bottom: 1rem;">
+            <label for="username" style="display: block; font-size: 0.825rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--text-main);">Username *</label>
+            <div style="position: relative;">
+              <input type="text" id="username" name="username" class="form-control" value="{{ form_data.username|default:'' }}" placeholder="e.g. john_doe" required style="padding-left: 2.3rem;">
+              <i data-lucide="at-sign" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--text-muted);"></i>
+            </div>
+            {% if errors.username %}
+              <div style="color: var(--danger); font-size: 0.75rem; margin-top: 0.25rem;">{{ errors.username }}</div>
+            {% endif %}
+          </div>
+
+          <!-- Email & Phone Grid -->
+          <div class="responsive-grid-1-1" style="gap: 0.75rem; margin-bottom: 1rem;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="email" style="display: block; font-size: 0.825rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--text-main);">Email Address *</label>
+              <div style="position: relative;">
+                <input type="email" id="email" name="email" class="form-control" value="{{ form_data.email|default:'' }}" placeholder="john@example.com" required style="padding-left: 2.3rem;">
+                <i data-lucide="mail" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--text-muted);"></i>
+              </div>
+              {% if errors.email %}
+                <div style="color: var(--danger); font-size: 0.75rem; margin-top: 0.25rem;">{{ errors.email }}</div>
+              {% endif %}
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="phone" style="display: block; font-size: 0.825rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--text-main);">Phone Number *</label>
+              <div style="position: relative;">
+                <input type="tel" id="phone" name="phone" class="form-control" value="{{ form_data.phone|default:'' }}" placeholder="+91 98765 43210" required style="padding-left: 2.3rem;">
+                <i data-lucide="phone" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--text-muted);"></i>
+              </div>
+              {% if errors.phone %}
+                <div style="color: var(--danger); font-size: 0.75rem; margin-top: 0.25rem;">{{ errors.phone }}</div>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Password Grid -->
+          <div class="responsive-grid-1-1" style="gap: 0.75rem; margin-bottom: 1rem;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="password" style="display: block; font-size: 0.825rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--text-main);">Password *</label>
+              <div style="position: relative;">
+                <input type="password" id="password" name="password" class="form-control" placeholder="Min. 6 chars" required minlength="6" style="padding-left: 2.3rem; padding-right: 2.3rem;">
+                <i data-lucide="lock" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--text-muted);"></i>
+                <button type="button" onclick="togglePassVisibility('password', 'passIcon1')" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 2px;">
+                  <i data-lucide="eye" id="passIcon1" style="width: 16px; height: 16px;"></i>
+                </button>
+              </div>
+              {% if errors.password %}
+                <div style="color: var(--danger); font-size: 0.75rem; margin-top: 0.25rem;">{{ errors.password }}</div>
+              {% endif %}
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="confirm_password" style="display: block; font-size: 0.825rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--text-main);">Confirm Password *</label>
+              <div style="position: relative;">
+                <input type="password" id="confirm_password" name="confirm_password" class="form-control" placeholder="Re-type password" required minlength="6" style="padding-left: 2.3rem; padding-right: 2.3rem;">
+                <i data-lucide="lock" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--text-muted);"></i>
+                <button type="button" onclick="togglePassVisibility('confirm_password', 'passIcon2')" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 2px;">
+                  <i data-lucide="eye" id="passIcon2" style="width: 16px; height: 16px;"></i>
+                </button>
+              </div>
+              {% if errors.confirm_password %}
+                <div style="color: var(--danger); font-size: 0.75rem; margin-top: 0.25rem;">{{ errors.confirm_password }}</div>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Terms Checkbox -->
+          <div style="margin-bottom: 1.25rem; font-size: 0.825rem;">
+            <label style="display: flex; align-items: flex-start; gap: 0.5rem; cursor: pointer; color: var(--text-muted);">
+              <input type="checkbox" name="terms_accepted" required checked style="margin-top: 3px; accent-color: var(--primary);">
+              <span>I agree to follow CCM Tele-calling Guidelines, data privacy policies, and accurate questionnaire recording standards.</span>
+            </label>
+            {% if errors.terms %}
+              <div style="color: var(--danger); font-size: 0.75rem; margin-top: 0.25rem;">{{ errors.terms }}</div>
+            {% endif %}
+          </div>
+
+          <!-- Submit Button -->
+          <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.85rem; font-size: 0.95rem; font-weight: 600; justify-content: center;">
+            <i data-lucide="user-plus" style="width: 18px; height: 18px;"></i>
+            <span>Register as Tele-caller</span>
+          </button>
+        </form>
+
+        <div style="text-align: center; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--divider-color);">
+          <span style="font-size: 0.85rem; color: var(--text-muted);">Already registered as a tele-caller?</span>
+          <a href="{% url 'login' %}?role=TELE_CALLER" style="font-size: 0.85rem; font-weight: 600; color: var(--primary); margin-left: 0.35rem;">
+            Sign In here &rarr;
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function togglePassVisibility(inputId, iconId) {
+    const input = document.getElementById(inputId);
+    const icon = document.getElementById(iconId);
+    if (!input || !icon) return;
+    if (input.type === 'password') {
+      input.type = 'text';
+      icon.setAttribute('data-lucide', 'eye-off');
+    } else {
+      input.type = 'password';
+      icon.setAttribute('data-lucide', 'eye');
+    }
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+  }
+</script>
+
+<style>
+  .auth-page-container {
+    min-height: 100vh;
+    background: #0b0f19;
+    display: flex;
+    flex-direction: column;
+    padding: 1.5rem;
+    position: relative;
+    box-sizing: border-box;
+  }
+  .auth-top-bar {
+    max-width: 1200px;
+    width: 100%;
+    margin: 0 auto 1rem;
+    display: flex;
+    justify-content: flex-start;
+  }
+  .btn-back-home {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #94a3b8;
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    padding: 0.5rem 0.85rem;
+    border-radius: var(--radius-sm);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all var(--transition-fast);
+  }
+  .btn-back-home:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.1);
+  }
+  .auth-split-wrapper {
+    max-width: 1200px;
+    width: 100%;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    background: #111827;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    min-height: 650px;
+  }
+  .auth-brand-side {
+    background: linear-gradient(145deg, #1e293b 0%, #0f172a 100%);
+    padding: 3rem 3.5rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .auth-brand-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  .auth-brand-headline {
+    font-size: 2.25rem;
+    font-weight: 800;
+    color: #ffffff;
+    line-height: 1.25;
+    letter-spacing: -0.5px;
+    margin: 2rem 0 1rem;
+  }
+  .auth-brand-headline span {
+    color: #38bdf8;
+  }
+  .auth-brand-desc {
+    color: #94a3b8;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin-bottom: 2rem;
+  }
+  .auth-feature-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+  .auth-feature-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  .auth-feat-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .auth-feat-icon.blue { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
+  .auth-feat-icon.green { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+  .auth-feat-icon.yellow { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+  .auth-feat-icon.cyan { background: rgba(6, 182, 212, 0.15); color: #22d3ee; }
+  .auth-feat-title {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #f1f5f9;
+  }
+  .auth-feat-desc {
+    font-size: 0.8rem;
+    color: #94a3b8;
+    line-height: 1.4;
+    margin-top: 0.15rem;
+  }
+  .auth-brand-footer {
+    padding-top: 2rem;
+    font-size: 0.775rem;
+    color: #64748b;
+  }
+  .auth-form-side {
+    background: var(--bg-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2.5rem;
+  }
+  .auth-card {
+    width: 100%;
+    max-width: 480px;
+  }
+  .btn-change-role {
+    background: none;
+    border: none;
+    color: var(--primary);
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0;
+    text-decoration: none;
+  }
+  @media (max-width: 992px) {
+    .auth-split-wrapper {
+      grid-template-columns: 1fr;
+    }
+    .auth-brand-side {
+      display: none;
+    }
+    .auth-form-side {
+      padding: 1.75rem 1.25rem;
+    }
+  }
+</style>
+{% endblock %}

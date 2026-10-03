@@ -27,12 +27,14 @@ def home_view(request):
             'total_campaigns': Campaign.objects.filter(status='Active').count(),
             'total_customers': Customer.objects.count(),
             'total_calls': CallRecord.objects.count(),
+            'total_telecallers': User.objects.filter(role='TELE_CALLER', is_active=True).count(),
         }
     except Exception:
         stats = {
             'total_campaigns': 0,
             'total_customers': 0,
             'total_calls': 0,
+            'total_telecallers': 0,
         }
     return render(request, 'public/home.html', {
         'stats': stats,
@@ -136,6 +138,123 @@ def logout_view(request):
         messages.info(request, "You have been logged out successfully.")
     return redirect('login')
 
+def telecaller_register(request):
+    """
+    Public self-registration view for Tele-callers.
+    Provisions TELE_CALLER account with secure PBKDF2 hashed storage,
+    phone number, full name, in-app welcome notification, and administrator notification.
+    """
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+
+    errors = {}
+    form_data = {}
+
+    if request.method == 'POST':
+        username = request.POST.get('username', '').strip()
+        first_name = request.POST.get('first_name', '').strip()
+        last_name = request.POST.get('last_name', '').strip()
+        email = request.POST.get('email', '').strip()
+        phone = request.POST.get('phone', '').strip()
+        password = request.POST.get('password', '').strip()
+        confirm_password = request.POST.get('confirm_password', '').strip()
+        terms_accepted = request.POST.get('terms_accepted')
+
+        form_data = {
+            'username': username,
+            'first_name': first_name,
+            'last_name': last_name,
+            'email': email,
+            'phone': phone,
+        }
+
+        # Validate Username
+        if not username:
+            errors['username'] = 'Username is required.'
+        elif len(username) < 3:
+            errors['username'] = 'Username must be at least 3 characters long.'
+        elif not username.replace('_', '').isalnum():
+            errors['username'] = 'Username may only contain letters, numbers, and underscores.'
+        elif User.objects.filter(username__iexact=username).exists():
+            errors['username'] = 'This username is already taken. Please choose another.'
+
+        # Validate Name
+        if not first_name:
+            errors['first_name'] = 'First name is required.'
+
+        # Validate Email
+        if not email:
+            errors['email'] = 'Email address is required.'
+        elif '@' not in email or '.' not in email.split('@')[-1]:
+            errors['email'] = 'Please enter a valid email address.'
+        elif User.objects.filter(email__iexact=email).exists():
+            errors['email'] = 'This email is already registered. Please sign in instead.'
+
+        # Validate Phone
+        if not phone:
+            errors['phone'] = 'Phone number is required.'
+        elif len(''.join(filter(str.isdigit, phone))) < 7:
+            errors['phone'] = 'Please enter a valid phone number.'
+
+        # Validate Password
+        if not password:
+            errors['password'] = 'Password is required.'
+        elif len(password) < 6:
+            errors['password'] = 'Password must be at least 6 characters long.'
+        elif password != confirm_password:
+            errors['confirm_password'] = 'Passwords do not match.'
+
+        if not terms_accepted:
+            errors['terms'] = 'You must agree to the Tele-calling guidelines.'
+
+        if not errors:
+            user = User.objects.create_user(
+                username=username,
+                email=email,
+                password=password,
+                first_name=first_name,
+                last_name=last_name,
+                phone=phone,
+                role='TELE_CALLER',
+                is_active=True
+            )
+
+            # In-App Welcome Notification
+            try:
+                from analytics.models import Notification
+                Notification.objects.create(
+                    recipient=user,
+                    notification_type='assignment',
+                    title='Welcome to CCM!',
+                    message=f'Hello {user.first_name or user.username}! Your tele-caller account is active. You can now access your workspace and start calling assigned leads.',
+                    related_object_type='system'
+                )
+
+                admin_users = User.objects.filter(role='ADMIN', is_active=True)
+                for admin in admin_users:
+                    Notification.objects.create(
+                        recipient=admin,
+                        notification_type='system',
+                        title='New Tele-caller Registered',
+                        message=f'Tele-caller {user.get_full_name() or user.username} (@{user.username}) registered on the platform.',
+                        related_object_type='telecaller',
+                        related_object_id=user.id
+                    )
+            except Exception:
+                pass
+
+            auth_login(request, user)
+            messages.success(request, f"Welcome to CCM, {user.get_full_name() or user.username}! Your tele-caller account is ready.")
+            return redirect('dashboard')
+
+    return render(request, 'auth/register.html', {
+        'errors': errors,
+        'form_data': form_data,
+    })
+
+from django.db.models import Count, Q, OuterRef, Subquery, IntegerField, Value
+from django.db.models.functions import Coalesce
+
 @admin_required
 def telecaller_list(request):
     search_query = request.GET.get('q', '').strip()
@@ -157,12 +276,57 @@ def telecaller_list(request):
     elif status_filter == 'inactive':
         telecallers = telecallers.filter(is_active=False)
 
+    assigned_sub = Subquery(
+        CampaignCustomer.objects.filter(assigned_telecaller=OuterRef('pk'))
+        .values('assigned_telecaller')
+        .annotate(cnt=Count('id'))
+        .values('cnt')[:1],
+        output_field=IntegerField()
+    )
+    pending_sub = Subquery(
+        CampaignCustomer.objects.filter(
+            assigned_telecaller=OuterRef('pk'),
+            assignment_status__in=['Assigned', 'In Progress']
+        )
+        .values('assigned_telecaller')
+        .annotate(cnt=Count('id'))
+        .values('cnt')[:1],
+        output_field=IntegerField()
+    )
+    completed_sub = Subquery(
+        CallRecord.objects.filter(
+            telecaller=OuterRef('pk'),
+            call_status='Completed'
+        )
+        .values('telecaller')
+        .annotate(cnt=Count('id'))
+        .values('cnt')[:1],
+        output_field=IntegerField()
+    )
+    followups_sub = Subquery(
+        FollowUp.objects.filter(
+            assigned_to=OuterRef('pk'),
+            status='Pending'
+        )
+        .values('assigned_to')
+        .annotate(cnt=Count('id'))
+        .values('cnt')[:1],
+        output_field=IntegerField()
+    )
+
+    telecallers = telecallers.annotate(
+        annotated_assigned=Coalesce(assigned_sub, Value(0)),
+        annotated_pending=Coalesce(pending_sub, Value(0)),
+        annotated_completed=Coalesce(completed_sub, Value(0)),
+        annotated_followups=Coalesce(followups_sub, Value(0)),
+    )
+
     telecaller_data = []
     for tc in telecallers:
-        assigned_count = CampaignCustomer.objects.filter(assigned_telecaller=tc).count()
-        completed_calls = CallRecord.objects.filter(telecaller=tc, call_status='Completed').count()
-        pending_calls = CampaignCustomer.objects.filter(assigned_telecaller=tc, assignment_status__in=['Assigned', 'In Progress']).count()
-        followups_due = FollowUp.objects.filter(assigned_to=tc, status='Pending').count()
+        assigned_count = tc.annotated_assigned
+        completed_calls = tc.annotated_completed
+        pending_calls = tc.annotated_pending
+        followups_due = tc.annotated_followups
         completion_rate = round((completed_calls / assigned_count * 100), 1) if assigned_count > 0 else 0
 
         telecaller_data.append({
@@ -219,6 +383,19 @@ def telecaller_create(request):
                 phone=phone,
                 role='TELE_CALLER'
             )
+
+            try:
+                from analytics.models import Notification
+                Notification.objects.create(
+                    recipient=user,
+                    notification_type='assignment',
+                    title='Welcome to CCM!',
+                    message=f'Hello {user.first_name or user.username}! Your tele-caller account has been provisioned by an administrator. You can now access your campaigns and start calling assigned leads.',
+                    related_object_type='system'
+                )
+            except Exception:
+                pass
+
             messages.success(request, f"Tele-caller '{user.username}' created successfully!")
             return redirect('telecaller_list')
 

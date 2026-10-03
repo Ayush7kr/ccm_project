@@ -38,12 +38,17 @@ A modern, production-ready tele-calling campaign and customer communication mana
 
 ### 2. Role-Based Access Control (RBAC) & Multi-Portal Architecture
 - **Interactive Role Selector**: Intuitive role selection portal with dedicated Administrator and Tele-caller access cards.
+- **Tele-caller Self-Registration (`/register/telecaller/`)**: Dedicated onboarding portal allowing new callers to register with real-time validation, password confirmation, contact info collection, and immediate provisioning into the tele-calling workforce.
 - **Admin Portal**: Full oversight of campaigns, customer databases, tele-caller workforce, dynamic questionnaires, bulk assignments, centralized analytics, and Report Center.
 - **Tele-caller Workspace**: Streamlined to assigned leads, live calling console with stopwatch duration timer, dynamic questionnaire logging, and callback scheduling.
 - **Strict Role Security**: Enforced via decorators (`@admin_required`, `@telecaller_required`), object-level filtering, and custom 403 Forbidden handlers.
 
 <p align="center">
-  <img src="docs/screenshots/login_role_selection.png" alt="Role Selection and Login" width="750">
+  <img src="docs/screenshots/login_role_selection.png" alt="Role Selection and Login" width="48%">
+  <img src="docs/screenshots/telecaller_registration.png" alt="Tele-caller Registration" width="48%">
+</p>
+<p align="center">
+  <em>Role selection portal (left) and modern tele-caller self-registration interface (right).</em>
 </p>
 
 ### 3. Dynamic Questionnaire Builder
@@ -102,11 +107,20 @@ A modern, production-ready tele-calling campaign and customer communication mana
 </p>
 
 ### 8. Work Management: Team, Calls & Follow-ups
+- **Responsive Zero-Overflow Data Tables**: Compact layout engineered to eliminate horizontal scrollbars on desktop screens. Features text truncation with hover tooltips, combined campaign/call context badges, and responsive column adaptation (`.col-hide-*`) across viewports.
+- **Contextual Action Dropdowns**: Clean floating dropdown menus anchored directly below action buttons, providing instant access to callback workflows (Mark Complete, Reschedule, Cancel) without UI clipping.
 
 | Tele-caller Workforce Directory | Call History Records | Follow-up Callback Queue |
 | :---: | :---: | :---: |
 | ![Tele-callers Roster](docs/screenshots/telecallers_management.png) | ![Call History Records](docs/screenshots/call_records.png) | ![Follow-up Callbacks](docs/screenshots/followups_list.png) |
 | *Agent status & metrics* | *Outcome badges & call times* | *Pending & overdue callbacks* |
+
+<p align="center">
+  <img src="docs/screenshots/followups_dropdown.png" alt="Contextual Action Dropdown" width="800">
+</p>
+<p align="center">
+  <em>Contextual Action Dropdown for callback task resolution (Mark Complete, Reschedule, Cancel).</em>
+</p>
 
 ### 9. Production Hardening & Health Monitoring
 - Environment variable configuration for secrets, hosts, and database URLs.
