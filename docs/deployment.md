@@ -11,8 +11,7 @@ This document describes how to deploy **CCM (Campaign Call Manager)** to a produ
                             │
                             ▼
               Nginx / Reverse Proxy (SSL Termination)
-             ├── /static/  ──► Serve static files directly
-             ├── /media/   ──► Serve media files directly
+             ├── /media/   ──► Serve uploaded media files directly
              └── /         ──► Proxy pass to Gunicorn (127.0.0.1:8000)
                                       │
                                       ▼
@@ -21,6 +20,9 @@ This document describes how to deploy **CCM (Campaign Call Manager)** to a produ
                                       │
                                       ▼
                         CCM Django Core Application
+                        ├── WhiteNoise Middleware (CompressedManifestStaticFilesStorage)
+                        │    └── High-performance Gzip/Brotli static asset delivery
+                        └── Database Connection Pooling (CONN_MAX_AGE=60)
                                       │
                                       ▼
                         PostgreSQL Database Server
@@ -40,6 +42,7 @@ SECRET_KEY=generate-a-strong-64-character-secret-key-here
 ALLOWED_HOSTS=ccm.yourcompany.com
 CSRF_TRUSTED_ORIGINS=https://ccm.yourcompany.com
 DATABASE_URL=postgresql://ccm_user:StrongPassword123@db:5432/ccm_db
+DB_CONN_MAX_AGE=60
 EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
 EMAIL_HOST=smtp.sendgrid.net
 EMAIL_PORT=587
@@ -152,6 +155,8 @@ server {
 
     client_max_body_size 25M;
 
+    # Note: WhiteNoise serves static files directly from Gunicorn with Gzip/Brotli compression.
+    # Defining location /static/ here in Nginx is optional but provides accelerated kernel sendfile performance.
     location /static/ {
         alias /var/www/ccm/staticfiles/;
         expires 30d;
@@ -181,13 +186,16 @@ sudo systemctl reload nginx
 
 ---
 
-## 4. Production Security Checklist
+## 4. Production Security & Resilience Checklist
 
 - [ ] `DEBUG = False` verified in production `.env`.
 - [ ] `SECRET_KEY` set to a unique, random string stored outside source control.
 - [ ] `ALLOWED_HOSTS` configured with exact domain names.
 - [ ] `SECURE_SSL_REDIRECT = True` active.
 - [ ] `SESSION_COOKIE_SECURE = True` and `CSRF_COOKIE_SECURE = True`.
+- [ ] `DB_CONN_MAX_AGE = 60` set for persistent connection pooling.
+- [ ] `python manage.py collectstatic --noinput` executed (WhiteNoise manifest generated).
 - [ ] Database credentials verified and limited to `ccm_user`.
+- [ ] Dual-state error templates (400, 403, 404, 500) verified for both authenticated and anonymous visitors.
 - [ ] HTTPS certificates configured with auto-renewal (e.g. Certbot Let's Encrypt).
 - [ ] Production health check verified at `https://ccm.yourcompany.com/health/`.

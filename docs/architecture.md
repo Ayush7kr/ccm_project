@@ -37,7 +37,7 @@ flowchart TD
     
     subgraph Storage ["Data & Storage Layer"]
         DB[(PostgreSQL / SQLite Database)]
-        StaticFiles["Static Asset Pipeline (CSS, JS, Fonts)"]
+        WhiteNoise["WhiteNoise Static Asset Pipeline (CompressedManifest)"]
         MediaFiles["Uploaded Assets / Exports"]
     end
 
@@ -52,7 +52,7 @@ flowchart TD
     RBAC --> AnalyticsApp
     AnalyticsApp --> Engine
     Apps <--> DB
-    WSGI <--> StaticFiles
+    WSGI <--> WhiteNoise
 ```
 
 ---

@@ -73,12 +73,16 @@ Insecure Direct Object Reference (IDOR) vulnerabilities are actively prevented b
 
 ---
 
-## 5. Production Error Masking
+## 5. Production Error Masking & Dual-State Information Isolation
 
-Production environments running with `DEBUG = False` route all errors to custom, branded error templates:
+Production environments running with `DEBUG = False` route all errors to custom, hardened error templates:
 - `400 Bad Request` (`templates/errors/400.html`)
 - `403 Forbidden` (`templates/errors/403.html`)
 - `404 Not Found` (`templates/errors/404.html`)
 - `500 Server Error` (`templates/errors/500.html`)
 
-These views guarantee that stack traces, database schema definitions, internal file system paths, and server environment variables are never exposed to clients.
+These views guarantee that stack traces, database schema definitions, internal file system paths, and server environment variables are never exposed to clients. 
+
+Furthermore, error templates employ a **dual-state inheritance pattern**:
+- **Authenticated Users**: Error cards render seamlessly inside the secure dashboard layout with contextual return actions (e.g. Return to Dashboard or Switch Account).
+- **Anonymous Visitors**: Error cards render centered within the public authentication container with safe navigation links (Back to Home, Sign In), preventing blank-screen render failures while strictly preventing leakage of internal navigation elements.

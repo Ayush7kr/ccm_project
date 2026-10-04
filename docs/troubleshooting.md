@@ -71,3 +71,28 @@ This document catalogs common issues, causes, and solutions encountered during d
 - **Cause**: The CSV/Excel file contains multiple rows with the same phone number, or the phone number already exists in the `Customer` table.
 - **Solution**:
   - CCM enforces unique phone numbers for lead deduplication. Check the preview table on `/customers/import/` which marks duplicates in red and allows skipping duplicate rows.
+
+### Issue: "UnicodeDecodeError: 'utf-8' codec can't decode byte..." when importing CSV
+- **Cause**: CSV was saved with Windows ANSI/Latin-1 encoding instead of UTF-8.
+- **Solution**:
+  - CCM automatically detects and handles dual encodings (`utf-8-sig` with transparent fallback to `latin-1`). If saving manually from Microsoft Excel, choose **"CSV (Comma delimited) (*.csv)"** or **"CSV UTF-8 (Comma delimited) (*.csv)"**.
+
+### Issue: Phone numbers imported from Excel contain trailing `.0` (e.g. `9876543210.0`)
+- **Cause**: Openpyxl reads numeric phone columns as floating-point numbers.
+- **Solution**:
+  - CCM automatically normalizes floating-point numbers to clean integer strings (`int(val)`). For manual formatting, set the column cell format to **Text** in Excel before importing.
+
+---
+
+## 6. Production & Static Asset Issues
+
+### Issue: Static assets return 404 under Gunicorn/Docker with `DEBUG=False`
+- **Cause**: WhiteNoise static manifest has not been generated or static files were not collected.
+- **Solution**:
+  - Run `python manage.py collectstatic --noinput` to generate compressed and hashed assets in `STATIC_ROOT`.
+  - Verify that `whitenoise.middleware.WhiteNoiseMiddleware` is present directly after `SecurityMiddleware` in `config/settings.py`.
+
+### Issue: Unauthenticated user sees a blank white page on 404 or 403 error
+- **Cause**: Historical template inheritance bug where unauthenticated error views rendered empty layout blocks.
+- **Solution**:
+  - CCM error templates now utilize dual-state inheritance (`content` inside authenticated dashboard; `auth_content` centered in public auth wrapper) providing clean error cards and navigation for all visitors.

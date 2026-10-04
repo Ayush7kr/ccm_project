@@ -130,6 +130,6 @@ python manage.py test
 
 Expected output:
 ```text
-Ran 57 tests in ~167s
+Ran 134 tests in ~210s
 OK
 ```

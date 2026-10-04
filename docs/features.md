@@ -96,6 +96,8 @@ This document provides a comprehensive overview of all functional modules and us
 - **Search & Filtering**: Instant search across customer name, phone, email, and company, with campaign and status filters.
 - **CSV & Excel Import Engine**:
   - Ingests `.csv` and modern `.xlsx` spreadsheet files.
+  - **Dual-Encoding Handling**: Supports both `utf-8-sig` and `latin-1` (Windows ANSI) automatically, eliminating `UnicodeDecodeError` exceptions on Excel-saved CSV files.
+  - **Numeric Phone Normalization**: Automatically normalizes Excel float values (e.g. `9876543210.0`) to clean integer phone strings (`9876543210`).
   - Validates missing names, phone formats, and duplicate phone numbers within the file and against the existing database.
   - Interactive pre-import review table highlighting valid vs invalid rows.
   - Automatic enrollment into selected target campaigns.
@@ -125,6 +127,8 @@ This document provides a comprehensive overview of all functional modules and us
 
 ## 9. Follow-up & Callback Management (`/followups/`)
 
+- **Zero-Side-Scroll Data Table**: Engineered with smart truncation (`.cell-truncate`), hover tooltips, and consolidated call information to display seamlessly on 1080p, 1366x768, and 1280x800 screens without horizontal scrolling.
+- **Contextual Actions Dropdown**: Polished action menu opening directly below the trigger button within screen boundaries.
 - **Automated Overdue Detection**: Background and on-demand detection converting pending follow-ups to `Overdue` once the scheduled date/time passes.
 - **Task Management**:
   - **Mark Complete**: Mark follow-up reminders as completed once handled. Re-completion of already completed tasks is strictly prevented.
