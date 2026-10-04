@@ -3,14 +3,45 @@
 {% block title %}500 Server Error — CCM{% endblock %}
 
 {% block content %}
-<div class="card empty-state" style="margin-top: 3rem;">
-  <div class="empty-state-icon" style="background-color: var(--danger-light); color: var(--danger);">
+<div class="card empty-state" style="margin-top: 2rem; text-align: center; padding: 3rem 1.5rem;">
+  <div class="empty-state-icon" style="background-color: var(--danger-light); color: var(--danger); width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem;">
     <i data-lucide="server-off" style="width: 32px; height: 32px;"></i>
   </div>
-  <h2 class="empty-state-title" style="font-size: 1.5rem;">Internal Server Error (500)</h2>
-  <p class="empty-state-desc">An unexpected error occurred while processing your request. Please try again later.</p>
-  <a href="{% url 'dashboard' %}" class="btn btn-primary">
-    <i data-lucide="arrow-left"></i> Return to Dashboard
-  </a>
+  <h2 class="empty-state-title" style="font-size: 1.65rem; font-weight: 800; letter-spacing: -0.5px;">Internal Server Error (500)</h2>
+  <p class="empty-state-desc" style="max-width: 480px; margin: 0.5rem auto 1.5rem; color: var(--text-muted); line-height: 1.5;">
+    An unexpected server exception occurred while processing this operation. Our engineering logs have been notified. Please try again or return to your workspace.
+  </p>
+  <div style="display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap;">
+    <a href="{% url 'dashboard' %}" class="btn btn-primary">
+      <i data-lucide="arrow-left"></i> Return to Dashboard
+    </a>
+    <a href="javascript:location.reload();" class="btn btn-outline">
+      <i data-lucide="refresh-cw"></i> Refresh Page
+    </a>
+  </div>
+</div>
+{% endblock %}
+
+{% block auth_content %}
+<div style="min-height: 80vh; display: flex; align-items: center; justify-content: center; padding: 2rem 1rem;">
+  <div style="max-width: 580px; width: 100%;">
+    <div class="card empty-state" style="text-align: center; padding: 3rem 1.5rem;">
+      <div class="empty-state-icon" style="background-color: var(--danger-light); color: var(--danger); width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem;">
+        <i data-lucide="server-off" style="width: 32px; height: 32px;"></i>
+      </div>
+      <h2 class="empty-state-title" style="font-size: 1.65rem; font-weight: 800; letter-spacing: -0.5px;">Internal Server Error (500)</h2>
+      <p class="empty-state-desc" style="max-width: 480px; margin: 0.5rem auto 1.5rem; color: var(--text-muted); line-height: 1.5;">
+        An unexpected server exception occurred while processing this operation. Our engineering logs have been notified. Please try again or return to your workspace.
+      </p>
+      <div style="display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap;">
+        <a href="{% url 'home' %}" class="btn btn-primary">
+          <i data-lucide="home"></i> Back to Home
+        </a>
+        <a href="{% url 'login' %}" class="btn btn-outline">
+          <i data-lucide="log-in"></i> Sign In
+        </a>
+      </div>
+    </div>
+  </div>
 </div>
 {% endblock %}

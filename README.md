@@ -306,8 +306,9 @@ curl http://localhost:8000/health/
    ```bash
    gunicorn --bind 0.0.0.0:8000 --workers 3 config.wsgi:application
    ```
+   *Note: Static files are served directly and efficiently by **WhiteNoise** with compression and long-term caching headers, requiring zero complex static web server configurations.*
 
-4. Configure Nginx as a reverse proxy forwarding requests to Gunicorn and serving `/static/` and `/media/`.
+4. Configure Nginx as a reverse proxy forwarding requests to Gunicorn and serving `/media/` (if using local storage).
 
 ---
 

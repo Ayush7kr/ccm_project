@@ -324,17 +324,21 @@ def customer_import(request):
 
         try:
             if filename.endswith('.csv'):
-                decoded_file = uploaded_file.read().decode('utf-8-sig')
+                file_bytes = uploaded_file.read()
+                try:
+                    decoded_file = file_bytes.decode('utf-8-sig')
+                except UnicodeDecodeError:
+                    decoded_file = file_bytes.decode('latin-1')
                 io_string = io.StringIO(decoded_file)
                 reader = csv.DictReader(io_string)
                 for index, row in enumerate(reader, start=2):
-                    name = row.get('name', '').strip()
-                    phone = row.get('phone', '').strip()
-                    email = row.get('email', '').strip()
-                    company = row.get('company', '').strip()
-                    address = row.get('address', '').strip()
-                    city = row.get('city', '').strip()
-                    state = row.get('state', '').strip()
+                    name = str(row.get('name') or '').strip()
+                    phone = str(row.get('phone') or '').strip()
+                    email = str(row.get('email') or '').strip()
+                    company = str(row.get('company') or '').strip()
+                    address = str(row.get('address') or '').strip()
+                    city = str(row.get('city') or '').strip()
+                    state = str(row.get('state') or '').strip()
 
                     row_error = None
                     if not name:
@@ -376,7 +380,17 @@ def customer_import(request):
                     if not any(row): continue
                     row_dict = dict(zip(headers, row))
                     name = str(row_dict.get('name') or '').strip()
-                    phone = str(row_dict.get('phone') or '').strip()
+
+                    raw_phone = row_dict.get('phone')
+                    if isinstance(raw_phone, float) and raw_phone.is_integer():
+                        phone = str(int(raw_phone))
+                    elif raw_phone is not None:
+                        phone = str(raw_phone).strip()
+                        if phone.endswith('.0') and phone[:-2].replace('+', '').isdigit():
+                            phone = phone[:-2]
+                    else:
+                        phone = ''
+
                     email = str(row_dict.get('email') or '').strip()
                     company = str(row_dict.get('company') or '').strip()
                     address = str(row_dict.get('address') or '').strip()

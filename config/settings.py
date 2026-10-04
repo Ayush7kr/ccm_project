@@ -54,6 +54,7 @@ AUTH_USER_MODEL = 'accounts.User'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -99,6 +100,7 @@ if DATABASE_URL:
             'PASSWORD': url.password or '',
             'HOST': url.hostname or '',
             'PORT': url.port or 5432,
+            'CONN_MAX_AGE': int(os.environ.get('DB_CONN_MAX_AGE', 60)),
         }
     }
 elif os.environ.get('DB_ENGINE') == 'postgresql':
@@ -110,6 +112,7 @@ elif os.environ.get('DB_ENGINE') == 'postgresql':
             'PASSWORD': os.environ.get('DB_PASSWORD', ''),
             'HOST': os.environ.get('DB_HOST', 'localhost'),
             'PORT': os.environ.get('DB_PORT', '5432'),
+            'CONN_MAX_AGE': int(os.environ.get('DB_CONN_MAX_AGE', 60)),
         }
     }
 else:
@@ -158,6 +161,15 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage" if not DEBUG else "django.contrib.staticfiles.storage.StaticFilesStorage",
+    },
+}
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'

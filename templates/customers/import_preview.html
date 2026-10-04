@@ -42,28 +42,28 @@
             <th>Status</th>
             <th>Name</th>
             <th>Phone</th>
-            <th>Email</th>
-            <th>Company</th>
-            <th>Location</th>
+            <th class="col-hide-md">Email</th>
+            <th class="col-hide-sm">Company</th>
+            <th class="col-hide-lg">Location</th>
             <th>Validation Note</th>
           </tr>
         </thead>
         <tbody>
           {% for r in rows %}
           <tr style="{% if not r.is_valid %}background-color: var(--danger-light);{% endif %}">
-            <td>Row {{ r.row_num }}</td>
+            <td style="white-space: nowrap; font-size: 0.75rem;">Row {{ r.row_num }}</td>
             <td>
               {% if r.is_valid %}
-                <span class="badge badge-success">Valid</span>
+                <span class="badge badge-success" style="font-size: 0.7rem;">Valid</span>
               {% else %}
-                <span class="badge badge-danger">Invalid</span>
+                <span class="badge badge-danger" style="font-size: 0.7rem;">Invalid</span>
               {% endif %}
             </td>
-            <td><strong>{{ r.name|default:"—" }}</strong></td>
-            <td>{{ r.phone|default:"—" }}</td>
-            <td>{{ r.email|default:"—" }}</td>
-            <td>{{ r.company|default:"—" }}</td>
-            <td>{{ r.city }}{% if r.state %}, {{ r.state }}{% endif %}</td>
+            <td><strong class="cell-truncate-sm">{{ r.name|default:"—" }}</strong></td>
+            <td style="white-space: nowrap;">{{ r.phone|default:"—" }}</td>
+            <td class="col-hide-md"><span class="cell-truncate-sm">{{ r.email|default:"—" }}</span></td>
+            <td class="col-hide-sm"><span class="cell-truncate-sm">{{ r.company|default:"—" }}</span></td>
+            <td class="col-hide-lg" style="font-size: 0.8rem;">{{ r.city }}{% if r.state %}, {{ r.state }}{% endif %}</td>
             <td style="font-size: 0.8rem; color: {% if r.is_valid %}var(--text-muted){% else %}var(--danger){% endif %};">
               {{ r.error|default:"Ready to import" }}
             </td>

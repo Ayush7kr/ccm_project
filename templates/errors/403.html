@@ -3,14 +3,48 @@
 {% block title %}403 Access Forbidden — CCM{% endblock %}
 
 {% block content %}
-<div class="card empty-state" style="margin-top: 3rem;">
-  <div class="empty-state-icon" style="background-color: var(--warning-light); color: var(--warning);">
+<div class="card empty-state" style="margin-top: 2rem; text-align: center; padding: 3rem 1.5rem;">
+  <div class="empty-state-icon" style="background-color: var(--warning-light); color: var(--warning); width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem;">
     <i data-lucide="shield-alert" style="width: 32px; height: 32px;"></i>
   </div>
-  <h2 class="empty-state-title" style="font-size: 1.5rem;">Access Forbidden (403)</h2>
-  <p class="empty-state-desc">You do not have permission to view this resource. Contact an administrator if you believe this is an error.</p>
-  <a href="{% url 'dashboard' %}" class="btn btn-primary">
-    <i data-lucide="arrow-left"></i> Return to Dashboard
-  </a>
+  <h2 class="empty-state-title" style="font-size: 1.65rem; font-weight: 800; letter-spacing: -0.5px;">Access Forbidden (403)</h2>
+  <p class="empty-state-desc" style="max-width: 460px; margin: 0.5rem auto 1.5rem; color: var(--text-muted); line-height: 1.5;">
+    You do not have administrative or role-level permissions to access this requested resource.
+  </p>
+  <div style="display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap;">
+    <a href="{% url 'dashboard' %}" class="btn btn-primary">
+      <i data-lucide="arrow-left"></i> Return to Dashboard
+    </a>
+    <a href="{% url 'logout' %}" class="btn btn-outline" onclick="event.preventDefault(); document.getElementById('error-logout-form').submit();">
+      <i data-lucide="log-out"></i> Switch Account
+    </a>
+    <form id="error-logout-form" action="{% url 'logout' %}" method="POST" style="display: none;">
+      {% csrf_token %}
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block auth_content %}
+<div style="min-height: 80vh; display: flex; align-items: center; justify-content: center; padding: 2rem 1rem;">
+  <div style="max-width: 580px; width: 100%;">
+    <div class="card empty-state" style="text-align: center; padding: 3rem 1.5rem;">
+      <div class="empty-state-icon" style="background-color: var(--warning-light); color: var(--warning); width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem;">
+        <i data-lucide="shield-alert" style="width: 32px; height: 32px;"></i>
+      </div>
+      <h2 class="empty-state-title" style="font-size: 1.65rem; font-weight: 800; letter-spacing: -0.5px;">Access Forbidden (403)</h2>
+      <p class="empty-state-desc" style="max-width: 460px; margin: 0.5rem auto 1.5rem; color: var(--text-muted); line-height: 1.5;">
+        You do not have administrative or role-level permissions to access this requested resource.
+      </p>
+      <div style="display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap;">
+        <a href="{% url 'home' %}" class="btn btn-primary">
+          <i data-lucide="home"></i> Back to Home
+        </a>
+        <a href="{% url 'login' %}" class="btn btn-outline">
+          <i data-lucide="log-in"></i> Sign In
+        </a>
+      </div>
+    </div>
+  </div>
 </div>
 {% endblock %}

@@ -47,5 +47,5 @@ class CampaignCustomer(models.Model):
         ordering = ['-created_at']
 
     def __str__(self):
-        caller = self.assigned_telecaller.get_full_name() if self.assigned_telecaller else 'Unassigned'
+        caller = (self.assigned_telecaller.get_full_name() or self.assigned_telecaller.username) if self.assigned_telecaller else 'Unassigned'
         return f"{self.customer.name} - {self.campaign.name} ({caller})"
