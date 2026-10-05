@@ -38,7 +38,7 @@ A modern, production-ready tele-calling campaign and customer communication mana
 
 ### 2. Role-Based Access Control (RBAC) & Multi-Portal Architecture
 - **Interactive Role Selector**: Intuitive role selection portal with dedicated Administrator and Tele-caller access cards.
-- **Tele-caller Self-Registration (`/register/telecaller/`)**: Dedicated onboarding portal allowing new callers to register with real-time validation, password confirmation, contact info collection, and immediate provisioning into the tele-calling workforce.
+- **Tele-caller Self-Registration (`/register/`)**: Dedicated onboarding portal allowing new callers to register with real-time validation, password confirmation, contact info collection, and immediate provisioning into the tele-calling workforce.
 - **Admin Portal**: Full oversight of campaigns, customer databases, tele-caller workforce, dynamic questionnaires, bulk assignments, centralized analytics, and Report Center.
 - **Tele-caller Workspace**: Streamlined to assigned leads, live calling console with stopwatch duration timer, dynamic questionnaire logging, and callback scheduling.
 - **Strict Role Security**: Enforced via decorators (`@admin_required`, `@telecaller_required`), object-level filtering, and custom 403 Forbidden handlers.
