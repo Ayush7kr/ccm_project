@@ -4,6 +4,46 @@ All notable changes to the **CCM (Campaign Call Manager)** project during this d
 
 ---
 
+## [Phase 14] — Role-Based FAQ & Help Center Implementation
+
+### Role-Based FAQ Knowledge Base & Help Center (`/help/`)
+- **Backend Role Isolation**: Implemented `accounts/faq_data.py` with `get_faqs_for_user(user)` ensuring tele-callers never receive Admin operational instructions.
+- **Admin FAQ Categories (7 Categories + General)**: Getting Started, Campaign Management, Customer Management (including shifting and exclusion of already-assigned leads), Questionnaire Management, Analytics & Reports, Tele-caller Management, Notifications, and General CCM Platform.
+- **Tele-caller FAQ Categories (7 Categories + General)**: Getting Started, Customer Leads & Campaigns, Call Console (stopwatch, disposition, notes), Questionnaire (5 question types, required question validation), Follow-ups & Callbacks, Call History & Privacy, Notifications, and General CCM Platform.
+- **Client-Side Instant Search**: Real-time keyword search across question and answer text, category filter pills, dynamic count indicator, and accessible empty state ("No matching FAQs found").
+- **Subtle Navigation Access**: Added Help icon button (`?` Lucide `help-circle`) to authenticated top navigation bar (`#helpBtn`), avoiding sidebar clutter.
+- **Contextual Help Links**: Placed non-intrusive FAQ links on Customer Assignment (`/help/#customer-management`), Call Console (`/help/#call-console`), and Follow-ups (`/help/#follow-ups`).
+- **Accessible Accordion Interface**: Keyboard-navigable buttons, ARIA `aria-expanded` attributes, Expand All / Collapse All controls, smooth chevron animations, and full dark/light theme compatibility.
+- **Automated Regression Testing**: Added 13 tests in `accounts/test_help_center.py` validating role isolation, anonymous redirects, search attributes, navbar and contextual link rendering, and content fidelity.
+
+---
+
+## [Phase 13] — Mentor Feedback Implementation (Customer Assignment Hardening, Shift Workload & Live Call Console Questionnaire)
+
+### Admin Customer Assignment Hardening
+- **Dynamic Metric Cards**: Displayed clear summary stat cards `Total Customers: N`, `Assigned: N`, `Remaining/Unassigned: N` (e.g. `[20] Total`, `[16] Assigned`, `[4] Remaining`) for selected campaigns.
+- **Strict Unassigned Filtering**: Selectable customer list for new assignment contains strictly unassigned active customers. Already-assigned customers do not appear in the normal assignment list.
+- **Dual GET/POST Validation**: Added backend rejection against attempts to assign already-assigned customers via crafted requests; completed customer assignments are preserved and cannot be reassigned as fresh leads.
+
+### Admin Customer Shift Workload Capability
+- **Dedicated Shift Feature (`customer_shift`)**: Added admin-only view and URL route (`/customers/shift/`) allowing workload reallocation from one tele-caller to another.
+- **Segregated Workload Tables**: Rendered currently assigned customers in a dedicated table separate from unassigned leads with bulk checkbox selection.
+- **Validation Rules**: Prevented shifts to the same tele-caller, rejected inactive or non-telecaller accounts, enforced admin authorization, and added confirmation prompts with feedback messages.
+- **Historical Call Ownership Protection**: Shifting a customer updates future assignment ownership (`CampaignCustomer.assigned_telecaller`) without rewriting or modifying historical call records (`CallRecord.telecaller`) or questionnaire responses. No duplicate `CampaignCustomer` records are created.
+
+### Tele-caller Live Call Console Questionnaire Integration
+- **Persistent Script & Questionnaire Section**: Replaced hidden toggle with a permanently visible questionnaire script card in the live Call Console (`record_call`), enabling agents to read questions and record customer answers live.
+- **All 5 Question Types Supported**: Fully validated and rendered `single_choice`, `multiple_choice`, `rating_scale` (1-5), `open_ended`, and `yes_no`.
+- **Response Isolation & Duplicate Prevention**: Saved `QuestionResponse` linked strictly to the specific `CallRecord` using `update_or_create` with database `UniqueConstraint(['call_record', 'question'])`. Responses cannot leak between customers or unauthorized tele-callers.
+- **Full Call Console Preservation**: Maintained existing stopwatch timer, outcome disposition, duration, notes, follow-up scheduling, and WhatsApp/phone contact actions intact.
+
+### Quality Assurance & Verification
+- **21 Mentor Feedback Regression Tests**: Added `customers/test_mentor_feedback.py` covering all 21 mentor requirements.
+- **Total Test Suite**: Increased from 148 to 169 automated tests with 100% pass rate (0 failures, 0 errors).
+- **System Integrity**: `python manage.py check` verified 0 issues.
+
+---
+
 ## [Phase 12] — Final Requirement Alignment, Omnichannel Contacts, Historical Data Integrity & Notification Hardening
 
 ### Customer Omnichannel Contacts & Profile Notes

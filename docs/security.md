@@ -114,3 +114,12 @@ To prevent permanent loss of historical reporting records and compliance data:
 2. **Hard-Deletion Isolation**: Permanent database deletion is permitted only for newly created or uncontacted test leads with zero operational history.
 3. **Reactivation Workflow**: Archived customer records can be restored by administrators at any time via a protected `@admin_required` POST endpoint (`/customers/<id>/restore/`).
 
+---
+
+## 8. Role-Based Help Center & Content Isolation Controls
+
+1. **Server-Side Payload Segregation**: FAQ categories are selected and filtered on the backend based on the user's authenticated role (`ADMIN` vs. `TELE_CALLER`) via [`get_faqs_for_user()`](file:///f:/CCM/accounts/faq_data.py#L532-L546). Tele-caller responses never contain administrative operational instructions.
+2. **Safe Templating (XSS Prevention)**: All FAQ questions and answers are rendered safely through Django's default escaping templating engine without using `mark_safe` on untrusted inputs.
+3. **Information Disclosure Prevention**: FAQ answers document verified operational usage without exposing backend internal file paths, credentials, database table structures, or system implementation details.
+4. **Authentication Boundary**: Protected with `@login_required` to block anonymous access, redirecting unauthenticated users to `/login/?next=/help/`.
+

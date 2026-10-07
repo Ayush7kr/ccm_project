@@ -131,6 +131,20 @@ A modern, production-ready tele-calling campaign and customer communication mana
 - Security headers: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`.
 - Dedicated health check endpoint: `/health/` verifying web server and database connectivity.
 
+### 10. Role-Based FAQ & Help Center (`/help/`)
+- **Discrete Top Header Navigation**: Accessible via a subtle `?` button (`#helpBtn`) in the authenticated navbar.
+- **Server-Enforced Role Segregation**: Backend dynamically serves strictly role-appropriate FAQ knowledge bases (Admin vs. Tele-caller) with no client-side role leakage.
+- **Role Knowledge Bases**: Comprehensive, system-verified guides covering Campaign Management, Customer Import & Shifting, Questionnaire Builder & Live Call Scripting, Live Console Stopwatch, Follow-ups, Unified Analytics, and Privacy Boundaries.
+- **Live Instant Search**: Client-side query engine across questions and answers with category filter pills, dynamic result counters, and empty-state messaging.
+- **Accessibility & Theming**: Full keyboard accessibility (`aria-expanded`), Expand All / Collapse All controls, responsive layouts, and light/dark theme support.
+
+<p align="center">
+  <img src="docs/screenshots/help_center.png" alt="Role-Based Help Center & FAQs" width="800">
+</p>
+<p align="center">
+  <em>CCM Help Center featuring role-filtered knowledge base, instant search, category pills, and accessible accordions.</em>
+</p>
+
 ---
 
 ## 🛠️ Technology Stack
@@ -259,7 +273,7 @@ Run the full Django test suite:
 ```bash
 python manage.py test
 ```
-All **148 automated tests** pass with **0 failures and 0 errors** across all subsystems:
+All **169 automated tests** pass with **0 failures and 0 errors** across all subsystems:
 
 Run tests for specific applications:
 ```bash

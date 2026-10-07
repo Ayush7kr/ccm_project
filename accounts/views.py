@@ -579,6 +579,24 @@ def user_password_reset_confirm(request, uidb64, token):
         'errors': errors,
     })
 
+@login_required
+def help_center(request):
+    """
+    Role-based Help Center & FAQ page.
+    Automatically delivers only the FAQ categories and questions permitted
+    for the authenticated user's role (Admin vs Tele-caller).
+    """
+    from .faq_data import get_faqs_for_user
+    faq_categories = get_faqs_for_user(request.user)
+    user_role_label = "Administrator" if request.user.is_admin_user else "Tele-caller"
+    total_questions = sum(len(cat['questions']) for cat in faq_categories)
+
+    return render(request, 'help/center.html', {
+        'faq_categories': faq_categories,
+        'user_role_label': user_role_label,
+        'total_questions': total_questions,
+    })
+
 def custom_bad_request(request, exception=None):
     return render(request, 'errors/400.html', status=400)
 

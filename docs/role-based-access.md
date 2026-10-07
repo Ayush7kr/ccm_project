@@ -56,6 +56,7 @@ CCM defines two mutually exclusive roles on the custom `User` model:
 | **Report Center** (`/reports/`) | ✅ Allowed | ❌ **HTTP 403 Forbidden** | `@admin_required` decorator |
 | **PDF & Excel Exports** | ✅ Allowed | ❌ **HTTP 403 Forbidden** | `@admin_required` decorator |
 | **Notifications** (`/notifications/`) | Own Notifications | Own Notifications | Queryset filtered by `recipient=request.user` |
+| **Help Center & FAQs** (`/help/`) | Admin FAQs + General | Tele-caller FAQs + General | Server-side role payload filtering (`get_faqs_for_user`) & `@login_required` |
 
 ---
 
@@ -126,3 +127,24 @@ Navigation items are rendered conditionally based on `request.user.is_admin_user
   - `Notifications`
 
 *Note: Tele-callers never see `Tele-callers`, `Analytics`, `Reports`, or the `Insights & Management` section.*
+
+---
+
+## 5. Role-Based Knowledge Base & Help Center Isolation
+
+The Help Center (`/help/`) enforces strict server-side content boundaries rather than cosmetic frontend hiding:
+
+- **Enforcement Function (`accounts/faq_data.py`)**:
+  ```python
+  def get_faqs_for_user(user):
+      if not user or not user.is_authenticated:
+          return []
+      if getattr(user, 'is_admin_user', False) or user.role == 'ADMIN':
+          return ADMIN_FAQ_CATEGORIES + [GENERAL_FAQ_CATEGORY]
+      elif getattr(user, 'is_telecaller_user', False) or user.role == 'TELE_CALLER':
+          return TELECALLER_FAQ_CATEGORIES + [GENERAL_FAQ_CATEGORY]
+      return [GENERAL_FAQ_CATEGORY]
+  ```
+- **Security Guarantee**:
+  - Tele-caller HTTP responses contain zero Admin operational categories (e.g. Campaign creation, customer shifting, tele-caller roster management, analytics, report exports).
+  - Both roles have access only to verified operational workflows relevant to their designated privileges.

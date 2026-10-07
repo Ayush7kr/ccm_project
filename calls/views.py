@@ -236,7 +236,11 @@ def record_call(request, assignment_id):
                     if q.required and not opt_val:
                         errors.append(f"Question '{q.question_text}' is required.")
                     elif opt_val:
-                        responses_to_create.append({'question': q, 'selected_options': [opt_val]})
+                        responses_to_create.append({
+                            'question': q,
+                            'response_text': opt_val,
+                            'selected_options': [opt_val]
+                        })
                 else:  # open_ended
                     text_val = request.POST.get(field_name, '').strip()
                     if q.required and not text_val:
@@ -278,12 +282,14 @@ def record_call(request, assignment_id):
                 assignment.assignment_status = 'In Progress'
             assignment.save()
 
-            # Save Question Responses
+            # Save Question Responses with duplicate prevention
             if call_status == 'Completed':
                 for resp_data in responses_to_create:
-                    QuestionResponse.objects.create(
+                    q_obj = resp_data.pop('question')
+                    QuestionResponse.objects.update_or_create(
                         call_record=call_record,
-                        **resp_data
+                        question=q_obj,
+                        defaults=resp_data
                     )
 
             # Create or update Follow-up if scheduled or required

@@ -92,8 +92,8 @@
     </div>
 
     <!-- Section 3: Campaign Questionnaire (Professional Call Script) -->
-    <div class="card" id="questionnaireSection" style="display: none; margin-bottom: 1.5rem; border-top: 3px solid var(--success);">
-      <div class="card-header" style="padding-bottom: 0.75rem;">
+    <div class="card" id="questionnaireSection" style="margin-bottom: 1.5rem; border-top: 3px solid var(--success);">
+      <div class="card-header" style="padding-bottom: 0.75rem; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.75rem;">
         <div>
           <h3 class="card-title" style="display: flex; align-items: center; gap: 0.5rem;">
             <i data-lucide="file-question" style="width: 18px; height: 18px; color: var(--success);"></i> Campaign Call Script & Questionnaire
@@ -102,6 +102,9 @@
             Structured responses required for questions marked with <span class="badge badge-danger" style="font-size: 0.65rem;">* Required</span>
           </p>
         </div>
+        <a href="{% url 'help_center' %}#call-console" target="_blank" class="btn btn-outline btn-sm" style="font-size: 0.78rem; color: var(--primary);" title="Need help with calls or questionnaires?">
+          <i data-lucide="help-circle" style="width: 13px; height: 13px;"></i> Need help with calls or questionnaires? View FAQ →
+        </a>
       </div>
 
       {% if questions %}
@@ -323,10 +326,8 @@
     function syncFormState() {
       if (!statusSelect) return;
       const val = statusSelect.value;
-      if (val === 'Completed') {
+      if (questionnaireSec) {
         questionnaireSec.style.display = 'block';
-      } else {
-        questionnaireSec.style.display = 'none';
       }
 
       if (val === 'Follow-up Required') {

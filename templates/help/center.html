@@ -1,0 +1,426 @@
+{% extends 'base.html' %}
+
+{% block title %}Help & FAQs — CCM{% endblock %}
+{% block page_title %}Help Center{% endblock %}
+
+{% block content %}
+<div class="help-center-container" style="max-width: 1000px; margin: 0 auto; display: flex; flex-direction: column; gap: 1.5rem;">
+
+  <!-- Hero Header Banner -->
+  <div class="card" style="padding: 2rem 1.75rem; background: linear-gradient(135deg, var(--bg-secondary), var(--primary-light)); border: 1px solid var(--border-color); position: relative; overflow: hidden;">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem; position: relative; z-index: 1;">
+      <div style="flex: 1; min-width: 280px;">
+        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; flex-wrap: wrap;">
+          <span class="badge badge-info" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">
+            <i data-lucide="shield" style="width: 12px; height: 12px; vertical-align: middle;"></i> Role: {{ user_role_label }}
+          </span>
+          <span class="badge badge-secondary" style="font-size: 0.75rem;">
+            {{ total_questions }} Answers Available
+          </span>
+        </div>
+        <h2 style="font-size: 1.75rem; font-weight: 800; color: var(--text-main); margin-bottom: 0.35rem; letter-spacing: -0.02em;">
+          CCM Help Center
+        </h2>
+        <p style="font-size: 0.95rem; color: var(--text-muted); margin: 0; line-height: 1.5;">
+          Find answers to common questions about using Campaign Call Manager. Knowledge base curated specifically for your account role.
+        </p>
+      </div>
+
+      <div style="display: flex; gap: 0.5rem; align-items: center;">
+        <button type="button" id="expandAllBtn" class="btn btn-outline btn-sm" title="Expand all questions">
+          <i data-lucide="chevrons-down" style="width: 14px; height: 14px;"></i> Expand All
+        </button>
+        <button type="button" id="collapseAllBtn" class="btn btn-outline btn-sm" title="Collapse all questions">
+          <i data-lucide="chevrons-up" style="width: 14px; height: 14px;"></i> Collapse All
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Search & Filter Controls -->
+  <div class="card" style="padding: 1.25rem 1.5rem;">
+    <div style="position: relative; display: flex; align-items: center;">
+      <i data-lucide="search" style="position: absolute; left: 1rem; width: 18px; height: 18px; color: var(--text-muted); pointer-events: none;"></i>
+      <input 
+        type="text" 
+        id="faqSearchInput" 
+        class="form-control" 
+        placeholder="Search FAQs by question text, answer keywords, or feature names (e.g. shift, questionnaire, follow-up, report)..." 
+        aria-label="Search FAQs"
+        style="padding-left: 2.75rem; padding-right: 2.5rem; height: 46px; font-size: 0.95rem; border-radius: var(--radius-md);"
+      >
+      <button 
+        type="button" 
+        id="clearSearchBtn" 
+        title="Clear search" 
+        style="display: none; position: absolute; right: 0.75rem; background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 0.25rem; font-size: 1.1rem; line-height: 1;"
+      >
+        <i data-lucide="x" style="width: 16px; height: 16px;"></i>
+      </button>
+    </div>
+
+    <!-- Live Search Metric & Quick Filter Tags -->
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid var(--border-color);">
+      <div id="searchCounter" style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">
+        Showing all {{ total_questions }} questions
+      </div>
+
+      <!-- Category Filter Pills -->
+      <div class="category-pills" style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
+        <button type="button" class="category-pill active" data-category="all">All Topics</button>
+        {% for cat in faq_categories %}
+          <button type="button" class="category-pill" data-category="{{ cat.id }}">{{ cat.title }}</button>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- FAQ Accordion Categories -->
+  <div id="faqCategoriesContainer" style="display: flex; flex-direction: column; gap: 1.5rem;">
+    {% for cat in faq_categories %}
+      <div class="card faq-category-card" id="{{ cat.id }}" data-category-id="{{ cat.id }}" style="padding: 1.5rem;">
+        <!-- Category Header -->
+        <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border-color);">
+          <div style="width: 38px; height: 38px; border-radius: var(--radius-md); background-color: var(--primary-light); color: var(--primary); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <i data-lucide="{{ cat.icon }}" style="width: 20px; height: 20px;"></i>
+          </div>
+          <div style="flex: 1;">
+            <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--text-main); margin: 0;">
+              {{ cat.title }}
+            </h3>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin: 2px 0 0 0;">
+              {{ cat.description }}
+            </p>
+          </div>
+          <span class="badge badge-secondary category-count-badge" style="font-size: 0.75rem;">
+            {{ cat.questions|length }}
+          </span>
+        </div>
+
+        <!-- Accordion Questions List -->
+        <div class="faq-questions-list" style="display: flex; flex-direction: column; gap: 0.6rem;">
+          {% for item in cat.questions %}
+            <div class="faq-item" data-question="{{ item.q|lower }}" data-answer="{{ item.a|lower }}">
+              <button 
+                type="button" 
+                class="faq-question-btn" 
+                aria-expanded="false" 
+                aria-controls="faq-ans-{{ cat.id }}-{{ forloop.counter }}"
+              >
+                <span class="faq-question-text">{{ item.q }}</span>
+                <i data-lucide="chevron-down" class="faq-chevron"></i>
+              </button>
+              <div 
+                id="faq-ans-{{ cat.id }}-{{ forloop.counter }}" 
+                class="faq-answer-panel" 
+                role="region"
+                style="display: none;"
+              >
+                <div class="faq-answer-content">
+                  {{ item.a }}
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    {% empty %}
+      <div class="card" style="text-align: center; padding: 3rem 1.5rem; color: var(--text-muted);">
+        <i data-lucide="info" style="width: 36px; height: 36px; margin: 0 auto 0.75rem auto; opacity: 0.5;"></i>
+        <h4 style="font-weight: 600;">No FAQs available for your role.</h4>
+      </div>
+    {% endfor %}
+  </div>
+
+  <!-- Empty Search Results State -->
+  <div id="noResultsState" class="card" style="display: none; text-align: center; padding: 3.5rem 1.5rem; border: 1px dashed var(--border-color);">
+    <i data-lucide="search-x" style="width: 44px; height: 44px; margin: 0 auto 1rem auto; color: var(--text-muted); opacity: 0.6;"></i>
+    <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.4rem;">
+      No matching FAQs found
+    </h3>
+    <p style="font-size: 0.9rem; color: var(--text-muted); max-width: 450px; margin: 0 auto 1.25rem auto;">
+      We couldn't find any questions or answers matching your search. Try searching for another keyword or clear the search filter.
+    </p>
+    <button type="button" id="resetSearchBtn" class="btn btn-primary btn-sm">
+      <i data-lucide="rotate-ccw" style="width: 14px; height: 14px;"></i> Clear Search & View All
+    </button>
+  </div>
+
+</div>
+
+<style>
+  /* Category Pill Buttons */
+  .category-pill {
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.35rem 0.75rem;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-family: inherit;
+  }
+  .category-pill:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+  }
+  .category-pill.active {
+    background-color: var(--primary);
+    border-color: var(--primary);
+    color: #ffffff;
+  }
+
+  /* FAQ Accordion Item Styling */
+  .faq-item {
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background-color: var(--bg-primary);
+    overflow: hidden;
+    transition: border-color 0.15s ease;
+  }
+  .faq-item:hover {
+    border-color: var(--primary-light);
+  }
+  .faq-item.is-open {
+    border-color: var(--primary);
+  }
+
+  /* Question Toggle Button */
+  .faq-question-btn {
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    padding: 1rem 1.15rem;
+    font-family: inherit;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-main);
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    transition: background-color 0.15s ease, color 0.15s ease;
+  }
+  .faq-question-btn:hover {
+    background-color: var(--bg-secondary);
+    color: var(--primary);
+  }
+  .faq-question-btn:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: -2px;
+  }
+  .faq-question-text {
+    flex: 1;
+    line-height: 1.4;
+  }
+  .faq-chevron {
+    width: 18px;
+    height: 18px;
+    color: var(--text-muted);
+    transition: transform 0.2s ease;
+    flex-shrink: 0;
+  }
+  .faq-item.is-open .faq-chevron {
+    transform: rotate(180deg);
+    color: var(--primary);
+  }
+
+  /* Answer Content Panel */
+  .faq-answer-panel {
+    border-top: 1px solid var(--border-color);
+    background-color: var(--bg-secondary);
+  }
+  .faq-answer-content {
+    padding: 1.1rem 1.25rem;
+    font-size: 0.9rem;
+    color: var(--text-main);
+    line-height: 1.65;
+  }
+
+  /* Responsive Adjustments */
+  @media (max-width: 640px) {
+    .faq-question-btn {
+      padding: 0.85rem 1rem;
+      font-size: 0.9rem;
+    }
+    .faq-answer-content {
+      padding: 0.9rem 1rem;
+      font-size: 0.85rem;
+    }
+    .help-center-container {
+      padding: 0 0.25rem;
+    }
+  }
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const searchInput = document.getElementById('faqSearchInput');
+    const clearBtn = document.getElementById('clearSearchBtn');
+    const resetSearchBtn = document.getElementById('resetSearchBtn');
+    const searchCounter = document.getElementById('searchCounter');
+    const categoryCards = document.querySelectorAll('.faq-category-card');
+    const allQuestions = document.querySelectorAll('.faq-item');
+    const noResultsState = document.getElementById('noResultsState');
+    const categoryPills = document.querySelectorAll('.category-pill');
+    const expandAllBtn = document.getElementById('expandAllBtn');
+    const collapseAllBtn = document.getElementById('collapseAllBtn');
+
+    let activeCategoryFilter = 'all';
+
+    // 1. Accordion Toggle Handler
+    allQuestions.forEach(item => {
+      const btn = item.querySelector('.faq-question-btn');
+      const panel = item.querySelector('.faq-answer-panel');
+
+      btn.addEventListener('click', () => {
+        const isOpen = item.classList.contains('is-open');
+        if (isOpen) {
+          item.classList.remove('is-open');
+          btn.setAttribute('aria-expanded', 'false');
+          panel.style.display = 'none';
+        } else {
+          item.classList.add('is-open');
+          btn.setAttribute('aria-expanded', 'true');
+          panel.style.display = 'block';
+        }
+      });
+    });
+
+    // 2. Expand All & Collapse All Controls
+    if (expandAllBtn) {
+      expandAllBtn.addEventListener('click', () => {
+        allQuestions.forEach(item => {
+          if (item.style.display !== 'none') {
+            item.classList.add('is-open');
+            const btn = item.querySelector('.faq-question-btn');
+            const panel = item.querySelector('.faq-answer-panel');
+            if (btn) btn.setAttribute('aria-expanded', 'true');
+            if (panel) panel.style.display = 'block';
+          }
+        });
+      });
+    }
+
+    if (collapseAllBtn) {
+      collapseAllBtn.addEventListener('click', () => {
+        allQuestions.forEach(item => {
+          item.classList.remove('is-open');
+          const btn = item.querySelector('.faq-question-btn');
+          const panel = item.querySelector('.faq-answer-panel');
+          if (btn) btn.setAttribute('aria-expanded', 'false');
+          if (panel) panel.style.display = 'none';
+        });
+      });
+    }
+
+    // 3. Search & Filter Engine
+    function filterFaqs() {
+      const query = (searchInput ? searchInput.value : '').trim().toLowerCase();
+      if (clearBtn) {
+        clearBtn.style.display = query.length > 0 ? 'inline-flex' : 'none';
+      }
+
+      let visibleQuestionsCount = 0;
+
+      categoryCards.forEach(card => {
+        const catId = card.getAttribute('data-category-id');
+        const matchesCategory = (activeCategoryFilter === 'all' || activeCategoryFilter === catId);
+
+        let categoryHasMatches = false;
+        const questionsInCard = card.querySelectorAll('.faq-item');
+
+        questionsInCard.forEach(item => {
+          const qText = item.getAttribute('data-question') || '';
+          const aText = item.getAttribute('data-answer') || '';
+          const matchesQuery = query === '' || qText.includes(query) || aText.includes(query);
+
+          if (matchesCategory && matchesQuery) {
+            item.style.display = 'block';
+            categoryHasMatches = true;
+            visibleQuestionsCount++;
+
+            // If searching with active query, auto-expand matching questions for quick reading
+            if (query.length > 0) {
+              item.classList.add('is-open');
+              const btn = item.querySelector('.faq-question-btn');
+              const panel = item.querySelector('.faq-answer-panel');
+              if (btn) btn.setAttribute('aria-expanded', 'true');
+              if (panel) panel.style.display = 'block';
+            }
+          } else {
+            item.style.display = 'none';
+          }
+        });
+
+        // Hide category card if no questions match
+        card.style.display = categoryHasMatches ? 'block' : 'none';
+      });
+
+      // Update counter text & empty state
+      if (visibleQuestionsCount === 0) {
+        if (noResultsState) noResultsState.style.display = 'block';
+        if (searchCounter) searchCounter.textContent = 'No matching questions found';
+      } else {
+        if (noResultsState) noResultsState.style.display = 'none';
+        if (searchCounter) {
+          if (query.length > 0 || activeCategoryFilter !== 'all') {
+            searchCounter.textContent = `Showing ${visibleQuestionsCount} matching question${visibleQuestionsCount === 1 ? '' : 's'}`;
+          } else {
+            searchCounter.textContent = `Showing all ${visibleQuestionsCount} questions`;
+          }
+        }
+      }
+    }
+
+    // Search input listener
+    if (searchInput) {
+      searchInput.addEventListener('input', filterFaqs);
+    }
+
+    // Clear search button
+    if (clearBtn) {
+      clearBtn.addEventListener('click', () => {
+        if (searchInput) searchInput.value = '';
+        filterFaqs();
+        if (searchInput) searchInput.focus();
+      });
+    }
+
+    // Reset search button
+    if (resetSearchBtn) {
+      resetSearchBtn.addEventListener('click', () => {
+        if (searchInput) searchInput.value = '';
+        activeCategoryFilter = 'all';
+        categoryPills.forEach(p => p.classList.toggle('active', p.getAttribute('data-category') === 'all'));
+        filterFaqs();
+      });
+    }
+
+    // Category pill listeners
+    categoryPills.forEach(pill => {
+      pill.addEventListener('click', () => {
+        categoryPills.forEach(p => p.classList.remove('active'));
+        pill.classList.add('active');
+        activeCategoryFilter = pill.getAttribute('data-category');
+        filterFaqs();
+      });
+    });
+
+    // Check URL hash for direct anchor scrolling (e.g. /help/#customer-management)
+    if (window.location.hash) {
+      const targetId = window.location.hash.substring(1);
+      const targetCard = document.getElementById(targetId);
+      if (targetCard) {
+        setTimeout(() => {
+          targetCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+      }
+    }
+  });
+</script>
+{% endblock %}

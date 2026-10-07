@@ -148,3 +148,24 @@ All export endpoints require `ADMIN` authentication (`@admin_required`).
 - **Parameters**: `username`, `first_name`, `last_name`, `email`, `phone`, `password`, `confirm_password`, `terms`.
 - **Response**: `302 Redirect` to `/dashboard/` upon successful registration and automatic login.
 
+---
+
+## 8. Customer Workload Shift Endpoint
+
+### `POST /customers/shift/`
+- **Purpose**: Shifts one or multiple currently assigned customers from their current tele-caller to a designated destination tele-caller.
+- **Authentication**: Required (`ADMIN` role enforced via `@admin_required`).
+- **Parameters**: `campaign_id`, `destination_telecaller`, `customer_ids` (list of integers).
+- **Validation**: Ensures destination agent is active and not identical to current assignee; protects historical call records.
+- **Response**: `302 Redirect` to `/customers/assign/?campaign_id=<id>`.
+
+---
+
+## 9. Help Center Endpoint
+
+### `GET /help/`
+- **Purpose**: Role-based FAQ and Help Center knowledge base.
+- **Authentication**: Required (`@login_required`).
+- **Payload Segregation**: Dynamically injects role-specific FAQs (`ADMIN_FAQ_CATEGORIES` for administrators, `TELECALLER_FAQ_CATEGORIES` for tele-callers, plus shared `GENERAL_FAQ_CATEGORY`).
+- **Response**: `200 OK` (renders `help/center.html`).
+

@@ -7,8 +7,13 @@
   </div>
 
   <div class="nav-right">
+    <!-- Help & FAQ Center -->
+    <a href="{% url 'help_center' %}" class="theme-toggle" id="helpBtn" title="Help & FAQ" aria-label="Help and FAQ Center" style="text-decoration: none;">
+      <i data-lucide="help-circle"></i>
+    </a>
+
     <!-- Theme Toggle -->
-    <button class="theme-toggle" id="themeToggleBtn" title="Toggle Theme">
+    <button class="theme-toggle" id="themeToggleBtn" title="Toggle Theme" aria-label="Toggle Light and Dark Theme">
       <i data-lucide="moon"></i>
     </button>
 

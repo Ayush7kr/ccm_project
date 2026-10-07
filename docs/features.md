@@ -190,3 +190,31 @@ This document provides a comprehensive overview of all functional modules and us
 
 ![Report Center and Export Configuration](screenshots/reports_center.png)
 
+---
+
+## 13. Role-Based FAQ & Help Center (`/help/`)
+
+- **Subtle Header Entry Point**: Accessible via a discrete `?` Help icon button in the authenticated top navigation bar (`#helpBtn`), providing instant assistance without cluttering the sidebar.
+- **Strict Server-Side Role Segregation**: FAQ categories and questions are filtered on the backend (`get_faqs_for_user`), ensuring tele-callers cannot inspect or receive Admin operational instructions (such as campaign creation, lead shifting, workforce management, or report exports).
+- **Admin Knowledge Base Categories**:
+  - *Getting Started*: Overview of CCM capabilities and administrator controls.
+  - *Campaign Management*: Creating, editing, tracking progress percentages, and questionnaire management.
+  - *Customer Management*: CSV/Excel importing, lead assignment, explanation of why already-assigned customers are excluded from new assignment lists, workload shifting, and historical call preservation.
+  - *Questionnaire Management*: Creating questions, 5 supported question types, required questions validation, and availability in live call console.
+  - *Analytics & Reports*: Database-derived KPIs, campaign progress capping at 100%, tele-caller performance, and PDF/Excel report exports.
+  - *Tele-caller Management*: Roster administration, assigning workload, and agent permissions.
+  - *Notifications*: System alerts (70% campaign milestone, 7-day agent inactivity), and read management.
+- **Tele-caller Knowledge Base Categories**:
+  - *Getting Started*: Tele-caller workspace overview, assigned workload, and daily workflow.
+  - *Customer Leads & Campaigns*: Lead visibility, why unassigned leads are not visible, and workload shift handling.
+  - *Call Console*: Starting calls, outcome disposition statuses, notes, and call stopwatch.
+  - *Questionnaire*: Locating call scripts, answering 5 question types, handling required questions, and response saving.
+  - *Follow-ups*: Scheduling, managing overdue callbacks, rescheduling, and resolution.
+  - *Call History*: Reviewing personal calls, privacy boundaries, and customer ownership isolation.
+  - *Notifications*: In-app assignment alerts and marking notifications as read.
+- **Shared General Section**: Dark/Light theme toggling, browser compatibility, and secure logout.
+- **Client-Side Live Instant Search**: Real-time filtering across question text and answer text with dynamic counter, category pill filters, and accessible empty state (`"No matching FAQs found"`).
+- **Contextual Help Links**: Non-intrusive links on high-impact pages (Customer Assignment, Call Console, Follow-ups) directing users straight to relevant Help Center sections.
+- **Accessible & Responsive Accordion**: Keyboard-accessible buttons, ARIA state attributes (`aria-expanded`), expand/collapse all controls, and full mobile/tablet responsiveness with CSS custom property theming.
+
+![Role-Based Help Center & FAQs](screenshots/help_center.png)

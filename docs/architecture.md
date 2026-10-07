@@ -61,9 +61,9 @@ flowchart TD
 
 | Application | Core Models | Primary Responsibilities |
 | :--- | :--- | :--- |
-| `accounts` | `User` | Custom user model inheriting from `AbstractUser`; role management (`ADMIN`, `TELE_CALLER`); role-aware login with server-side validation; cryptographic password reset workflows; tele-caller self-registration (`/register/`) with strict role-pinning and account provisioning. |
+| `accounts` | `User` | Custom user model inheriting from `AbstractUser`; role management (`ADMIN`, `TELE_CALLER`); role-aware login with server-side validation; cryptographic password reset workflows; tele-caller self-registration (`/register/`) with strict role-pinning and account provisioning; role-based Help Center & FAQ knowledge base (`accounts/faq_data.py`). |
 | `campaigns` | `Campaign`, `Questionnaire`, `Question` | Campaign lifecycle management (Draft, Active, Paused, Completed, Archived); dynamic questionnaire builder supporting 5 question types. |
-| `customers` | `Customer`, `CampaignCustomer` | Central customer directory; omnichannel contacts (phone, WhatsApp number, persistent profile notes); historical data protection with archiving lifecycle (`is_active`) and one-click restore; lead enrollment into campaigns; CSV/XLSX bulk lead import with row-level validation; assignment of leads to tele-callers. |
+| `customers` | `Customer`, `CampaignCustomer` | Central customer directory; omnichannel contacts (phone, WhatsApp number, persistent profile notes); historical data protection with archiving lifecycle (`is_active`) and one-click restore; lead enrollment into campaigns; customer workload shifting (`/customers/shift/`); CSV/XLSX bulk lead import with row-level validation; assignment of leads to tele-callers. |
 | `calls` | `CallRecord`, `QuestionResponse`, `FollowUp` | Live tele-caller dialing console; call status capture; question response recording; callback/follow-up scheduling and overdue detection; 70% campaign milestone detection; follow-up notification auto-clearing; inactive tele-caller alerts. |
 | `analytics` | `Notification` | Centralized analytics engine (`analytics/engine.py`) calculating core KPIs (Total Calls, Completed Calls, Conversion Rate, Avg Call Duration); date-range and campaign filtering; Report Center with PDF (`ReportLab`) and Excel (`openpyxl`) export engines; notification center. |
 

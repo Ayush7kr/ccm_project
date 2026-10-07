@@ -520,7 +520,9 @@ def customer_import(request):
 
     return render(request, 'customers/import.html')
 
-# --- BULK CUSTOMER ASSIGNMENT ---
+from django.urls import reverse
+
+# --- BULK CUSTOMER ASSIGNMENT & SHIFTING ---
 
 @admin_required
 def customer_assign(request):
@@ -534,28 +536,49 @@ def customer_assign(request):
 
         if campaign.status not in ['Draft', 'Active']:
             messages.error(request, f"Cannot assign customers to campaign '{campaign.name}' with status '{campaign.status}'. Only Draft or Active campaigns accept assignments.")
-            return redirect('customer_assign')
+            return redirect(f"{reverse('customer_assign')}?campaign_id={campaign.id}")
 
         if not telecaller.is_active:
             messages.error(request, f"Cannot assign customers to inactive tele-caller '{telecaller.username}'.")
-            return redirect('customer_assign')
+            return redirect(f"{reverse('customer_assign')}?campaign_id={campaign.id}")
 
         if not customer_ids:
             messages.error(request, "Please select at least one customer to assign.")
-            return redirect('customer_assign')
+            return redirect(f"{reverse('customer_assign')}?campaign_id={campaign.id}")
+
+        # Strict validation: reject already-assigned customers in this campaign
+        already_assigned_names = []
+        valid_customers = []
+
+        for cust_id in customer_ids:
+            customer = Customer.objects.filter(pk=cust_id, is_active=True).first()
+            if not customer:
+                continue
+
+            existing_link = CampaignCustomer.objects.filter(campaign=campaign, customer=customer).first()
+            if existing_link and (existing_link.assigned_telecaller is not None or existing_link.assignment_status in ['Assigned', 'In Progress', 'Completed']):
+                already_assigned_names.append(customer.name)
+            else:
+                valid_customers.append(customer)
+
+        if already_assigned_names:
+            names_str = ", ".join(already_assigned_names[:5])
+            if len(already_assigned_names) > 5:
+                names_str += f" and {len(already_assigned_names) - 5} more"
+            messages.error(request, f"Cannot assign: Customer(s) '{names_str}' are already assigned in this campaign. Use 'Shift Customer' to transfer tele-callers.")
+
+        if not valid_customers:
+            return redirect(f"{reverse('customer_assign')}?campaign_id={campaign.id}")
 
         assigned_count = 0
         with transaction.atomic():
-            for cust_id in customer_ids:
-                customer = Customer.objects.filter(pk=cust_id, is_active=True).first()
-                if not customer:
-                    continue
+            for customer in valid_customers:
                 link, created = CampaignCustomer.objects.get_or_create(
                     campaign=campaign,
                     customer=customer
                 )
                 link.assigned_telecaller = telecaller
-                link.assignment_status = 'Assigned' if link.assignment_status == 'Unassigned' else link.assignment_status
+                link.assignment_status = 'Assigned'
                 link.assigned_at = timezone.now()
                 link.save()
                 assigned_count += 1
@@ -576,10 +599,154 @@ def customer_assign(request):
 
     campaigns = Campaign.objects.filter(status__in=['Draft', 'Active'])
     telecallers = User.objects.filter(role='TELE_CALLER', is_active=True)
-    customers = Customer.objects.filter(is_active=True)[:100]
+
+    campaign_id = request.GET.get('campaign_id')
+    selected_campaign = None
+    if campaign_id:
+        selected_campaign = campaigns.filter(pk=campaign_id).first()
+    if not selected_campaign and campaigns.exists():
+        selected_campaign = campaigns.first()
+
+    total_count = 0
+    assigned_count = 0
+    unassigned_count = 0
+    unassigned_customers = []
+    assigned_links = []
+
+    if selected_campaign:
+        enrolled_links = CampaignCustomer.objects.filter(
+            campaign=selected_campaign,
+            customer__is_active=True
+        ).select_related('customer', 'assigned_telecaller')
+
+        assigned_links = enrolled_links.filter(
+            Q(assigned_telecaller__isnull=False) | Q(assignment_status='Completed')
+        )
+        assigned_customer_ids = set(assigned_links.values_list('customer_id', flat=True))
+        assigned_count = len(assigned_customer_ids)
+
+        unassigned_enrolled = enrolled_links.filter(
+            assigned_telecaller__isnull=True
+        ).exclude(assignment_status='Completed')
+        unassigned_enrolled_ids = set(unassigned_enrolled.values_list('customer_id', flat=True))
+
+        if unassigned_enrolled.exists():
+            unassigned_customers = list(Customer.objects.filter(id__in=unassigned_enrolled_ids, is_active=True))
+            unassigned_count = len(unassigned_customers)
+            total_count = assigned_count + unassigned_count
+        elif assigned_links.exists():
+            other_active = Customer.objects.filter(is_active=True).exclude(id__in=assigned_customer_ids)
+            if other_active.exists():
+                unassigned_customers = list(other_active[:100])
+                unassigned_count = other_active.count()
+                total_count = assigned_count + unassigned_count
+            else:
+                unassigned_customers = []
+                unassigned_count = 0
+                total_count = assigned_count
+        else:
+            active_customers = Customer.objects.filter(is_active=True)
+            unassigned_customers = list(active_customers[:100])
+            total_count = active_customers.count()
+            unassigned_count = total_count
+            assigned_count = 0
+    else:
+        active_customers = Customer.objects.filter(is_active=True)
+        unassigned_customers = list(active_customers[:100])
+        total_count = active_customers.count()
+        unassigned_count = total_count
+        assigned_count = 0
 
     return render(request, 'customers/assign.html', {
         'campaigns': campaigns,
+        'selected_campaign': selected_campaign,
         'telecallers': telecallers,
-        'customers': customers
+        'customers': unassigned_customers,
+        'assigned_links': assigned_links,
+        'total_count': total_count,
+        'assigned_count': assigned_count,
+        'unassigned_count': unassigned_count,
     })
+
+
+@admin_required
+def customer_shift(request):
+    """Admin-only operation to shift an already-assigned customer to another tele-caller."""
+    if request.method != 'POST':
+        return redirect('customer_assign')
+
+    campaign_id = request.POST.get('campaign_id')
+    destination_telecaller_id = request.POST.get('destination_telecaller_id')
+    customer_ids = request.POST.getlist('customer_ids')
+
+    if not campaign_id or not destination_telecaller_id or not customer_ids:
+        messages.error(request, "Please select the campaign, destination tele-caller, and at least one customer to shift.")
+        redirect_url = reverse('customer_assign')
+        if campaign_id:
+            redirect_url += f"?campaign_id={campaign_id}"
+        return redirect(redirect_url)
+
+    campaign = get_object_or_404(Campaign, pk=campaign_id)
+
+    # Validate destination user
+    destination_telecaller = User.objects.filter(pk=destination_telecaller_id).first()
+    if not destination_telecaller:
+        messages.error(request, "Destination tele-caller not found.")
+        return redirect(f"{reverse('customer_assign')}?campaign_id={campaign.id}")
+
+    if destination_telecaller.role != 'TELE_CALLER':
+        messages.error(request, "Destination user must have the TELE_CALLER role.")
+        return redirect(f"{reverse('customer_assign')}?campaign_id={campaign.id}")
+
+    if not destination_telecaller.is_active:
+        messages.error(request, f"Cannot shift customers to inactive tele-caller '{destination_telecaller.username}'.")
+        return redirect(f"{reverse('customer_assign')}?campaign_id={campaign.id}")
+
+    # Check selected customers
+    links_to_shift = []
+    same_telecaller_count = 0
+    not_assigned_count = 0
+
+    for cust_id in customer_ids:
+        link = CampaignCustomer.objects.filter(campaign=campaign, customer_id=cust_id).first()
+        if not link or link.assigned_telecaller is None:
+            not_assigned_count += 1
+            continue
+        if link.assigned_telecaller == destination_telecaller:
+            same_telecaller_count += 1
+            continue
+        links_to_shift.append(link)
+
+    if not links_to_shift:
+        if same_telecaller_count > 0:
+            messages.error(request, "Cannot shift customer(s) to the same tele-caller currently assigned.")
+        elif not_assigned_count > 0:
+            messages.error(request, "Selected customer(s) are not currently assigned in this campaign.")
+        else:
+            messages.error(request, "No valid customers to shift.")
+        return redirect(f"{reverse('customer_assign')}?campaign_id={campaign.id}")
+
+    with transaction.atomic():
+        shifted_count = 0
+        for link in links_to_shift:
+            link.assigned_telecaller = destination_telecaller
+            link.assigned_at = timezone.now()
+            if link.assignment_status == 'Unassigned':
+                link.assignment_status = 'Assigned'
+            link.save()
+            shifted_count += 1
+
+    # Send Notification to destination telecaller
+    from analytics.models import Notification
+    Notification.objects.create(
+        recipient=destination_telecaller,
+        notification_type='assignment',
+        title='Shifted Customer Assignment',
+        message=f"{shifted_count} customer(s) have been shifted to you in campaign '{campaign.name}'.",
+        related_object_type='campaign',
+        related_object_id=campaign.id
+    )
+
+    dest_name = destination_telecaller.get_full_name() or destination_telecaller.username
+    messages.success(request, f"Successfully shifted {shifted_count} customer(s) to {dest_name}!")
+    return redirect(f"{reverse('customer_assign')}?campaign_id={campaign.id}")

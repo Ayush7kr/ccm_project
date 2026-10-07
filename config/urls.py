@@ -18,8 +18,9 @@ urlpatterns = [
     path('register/', account_views.telecaller_register, name='telecaller_register'),
     path('logout/', account_views.logout_view, name='logout'),
 
-    # Dashboard
+    # Dashboard & Help Center
     path('dashboard/', analytics_views.dashboard, name='dashboard'),
+    path('help/', account_views.help_center, name='help_center'),
 
     # Tele-callers Roster (Admin)
     path('tele-callers/', account_views.telecaller_list, name='telecaller_list'),
@@ -51,6 +52,7 @@ urlpatterns = [
     path('customers/import/', customer_views.customer_import, name='customer_import'),
     path('customers/import/sample/', customer_views.customer_import_sample, name='customer_import_sample'),
     path('customers/assign/', customer_views.customer_assign, name='customer_assign'),
+    path('customers/shift/', customer_views.customer_shift, name='customer_shift'),
 
     # Calls & Console
     path('calls/', call_views.call_list, name='call_list'),

@@ -1,105 +1,408 @@
 {% extends 'base.html' %}
 
-{% block title %}Assign Customers — CCM{% endblock %}
-{% block page_title %}Bulk Customer Assignment{% endblock %}
+{% block title %}Assign & Shift Customers — CCM{% endblock %}
+{% block page_title %}Campaign Customer Allocation{% endblock %}
 
 {% block content %}
-<div class="card" style="max-width: 900px; margin: 0 auto;">
-  <div class="card-header">
-    <div>
-      <h3 class="card-title">Assign Customers to Tele-callers</h3>
-      <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">Select campaign, tele-caller agent, and check target customers to allocate workload</p>
+<div style="max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 1.5rem;">
+
+  <!-- Campaign Selector & Navigation Header -->
+  <div class="card" style="padding: 1.25rem 1.5rem; background: linear-gradient(135deg, var(--bg-secondary), var(--primary-light)); border: 1px solid var(--border-color);">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+      <div style="flex: 1; min-width: 260px;">
+        <label for="campaignSelect" style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); display: block; margin-bottom: 0.4rem;">
+          Select Active / Draft Campaign
+        </label>
+        <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+          <select id="campaignSelect" class="form-select" style="max-width: 380px; font-weight: 600;" onchange="if(this.value) window.location.href='{% url 'customer_assign' %}?campaign_id=' + this.value;">
+            {% for c in campaigns %}
+              <option value="{{ c.id }}" {% if selected_campaign and selected_campaign.id == c.id %}selected{% endif %}>
+                {{ c.name }} ({{ c.status }})
+              </option>
+            {% empty %}
+              <option value="">No Active or Draft Campaigns Found</option>
+            {% endfor %}
+          </select>
+          {% if selected_campaign %}
+            <span class="badge {% if selected_campaign.status == 'Active' %}badge-success{% else %}badge-secondary{% endif %}">
+              {{ selected_campaign.status }}
+            </span>
+            <a href="{% url 'campaign_detail' selected_campaign.id %}" class="btn btn-outline btn-sm" style="font-size: 0.75rem;">
+              <i data-lucide="external-link" style="width: 13px; height: 13px;"></i> View Campaign
+            </a>
+          {% endif %}
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+        <a href="{% url 'help_center' %}#customer-management" class="btn btn-outline btn-sm" style="font-size: 0.78rem; color: var(--primary);" title="Need help assigning customers?">
+          <i data-lucide="help-circle" style="width: 14px; height: 14px;"></i> Need help assigning customers? View FAQ →
+        </a>
+        <a href="{% url 'customer_list' %}" class="btn btn-outline btn-sm">
+          <i data-lucide="arrow-left"></i> Customer Directory
+        </a>
+      </div>
     </div>
-    <a href="{% url 'customer_list' %}" class="btn btn-outline btn-sm">
-      <i data-lucide="arrow-left"></i> Directory
-    </a>
   </div>
 
-  <form method="POST" action="{% url 'customer_assign' %}" id="assignForm">
-    {% csrf_token %}
-
-    <div class="responsive-grid-1-1" style="margin-bottom: 1.5rem;">
-      <div class="form-group">
-        <label for="campaign_id">1. Target Campaign *</label>
-        <select id="campaign_id" name="campaign_id" class="form-select" required>
-          <option value="">-- Select Campaign --</option>
-          {% for c in campaigns %}
-            <option value="{{ c.id }}">{{ c.name }} ({{ c.status }})</option>
-          {% endfor %}
-        </select>
+  <!-- Metric Summary Cards -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
+    <!-- Total Customers -->
+    <div class="card" style="padding: 1.25rem; border-left: 4px solid var(--primary); display: flex; align-items: center; gap: 1rem;">
+      <div style="width: 46px; height: 46px; border-radius: var(--radius-md); background-color: var(--primary-light); color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">
+        <i data-lucide="users"></i>
       </div>
-
-      <div class="form-group">
-        <label for="telecaller_id">2. Assigned Tele-caller Agent *</label>
-        <select id="telecaller_id" name="telecaller_id" class="form-select" required>
-          <option value="">-- Select Tele-caller --</option>
-          {% for tc in telecallers %}
-            <option value="{{ tc.id }}">{{ tc.get_full_name|default:tc.username }} (@{{ tc.username }})</option>
-          {% endfor %}
-        </select>
+      <div>
+        <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">
+          Total Customers
+        </div>
+        <div style="font-size: 1.75rem; font-weight: 800; color: var(--text-main); line-height: 1.2;">
+          {{ total_count }}
+        </div>
       </div>
     </div>
 
-    <div style="margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
-      <h4 style="font-size: 0.95rem; font-weight: 600;">3. Select Customers to Assign</h4>
-      <button type="button" id="selectAllBtn" class="btn btn-outline btn-sm">Select All</button>
+    <!-- Assigned Customers -->
+    <div class="card" style="padding: 1.25rem; border-left: 4px solid var(--success); display: flex; align-items: center; gap: 1rem;">
+      <div style="width: 46px; height: 46px; border-radius: var(--radius-md); background-color: rgba(16, 185, 129, 0.1); color: var(--success); display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">
+        <i data-lucide="user-check"></i>
+      </div>
+      <div>
+        <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">
+          Assigned
+        </div>
+        <div style="font-size: 1.75rem; font-weight: 800; color: var(--success); line-height: 1.2;">
+          {{ assigned_count }}
+        </div>
+      </div>
     </div>
 
-    <div class="table-responsive" style="max-height: 350px; overflow-y: auto; margin-bottom: 1.5rem;">
-      <table class="table">
-        <thead>
-          <tr>
-            <th style="width: 40px;"><input type="checkbox" id="masterCheckbox"></th>
-            <th>Customer Name</th>
-            <th>Phone</th>
-            <th>Email</th>
-            <th>Company</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for cust in customers %}
-          <tr>
-            <td><input type="checkbox" name="customer_ids" value="{{ cust.id }}" class="cust-checkbox"></td>
-            <td><strong>{{ cust.name }}</strong></td>
-            <td>{{ cust.phone }}</td>
-            <td>{{ cust.email|default:"—" }}</td>
-            <td>{{ cust.company|default:"—" }}</td>
-          </tr>
-          {% empty %}
-          <tr>
-            <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">No customers available.</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+    <!-- Remaining / Unassigned Customers -->
+    <div class="card" style="padding: 1.25rem; border-left: 4px solid var(--warning); display: flex; align-items: center; gap: 1rem;">
+      <div style="width: 46px; height: 46px; border-radius: var(--radius-md); background-color: rgba(245, 158, 11, 0.1); color: var(--warning); display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">
+        <i data-lucide="user-x"></i>
+      </div>
+      <div>
+        <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">
+          Remaining / Unassigned
+        </div>
+        <div style="font-size: 1.75rem; font-weight: 800; color: var(--warning); line-height: 1.2;">
+          {{ unassigned_count }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 1: UNASSIGNED CUSTOMERS (NEW ASSIGNMENT) -->
+  <div class="card" id="unassignedSection">
+    <div class="card-header" style="padding-bottom: 0.75rem;">
+      <div>
+        <h3 class="card-title" style="display: flex; align-items: center; gap: 0.5rem; font-size: 1.15rem;">
+          <i data-lucide="user-plus" style="color: var(--primary);"></i> UNASSIGNED CUSTOMERS
+        </h3>
+        <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
+          The selectable customer list for new assignment contains <strong>ONLY</strong> currently unassigned/remaining active customers.
+        </p>
+      </div>
+      <span class="badge badge-warning" style="font-size: 0.8rem; font-weight: 700;">
+        {{ unassigned_count }} Available
+      </span>
     </div>
 
-    <div style="display: flex; justify-content: flex-end; gap: 1rem;">
-      <a href="{% url 'customer_list' %}" class="btn btn-secondary">Cancel</a>
-      <button type="submit" class="btn btn-primary" data-confirm="Confirm assigning selected customers to the designated tele-caller?">
-        <i data-lucide="user-check"></i> Complete Assignment
-      </button>
+    {% if selected_campaign %}
+      <form method="POST" action="{% url 'customer_assign' %}" id="assignForm">
+        {% csrf_token %}
+        <input type="hidden" name="campaign_id" value="{{ selected_campaign.id }}">
+
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.25rem; background-color: var(--bg-primary); padding: 1rem; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+          <div style="flex: 1; min-width: 260px;">
+            <label for="telecaller_id" style="font-weight: 700; font-size: 0.9rem; margin-bottom: 0.35rem; display: block;">
+              Assign to Tele-caller Agent <span style="color: var(--danger);">*</span>
+            </label>
+            <select id="telecaller_id" name="telecaller_id" class="form-select" required>
+              <option value="">-- Select Active Tele-caller --</option>
+              {% for tc in telecallers %}
+                <option value="{{ tc.id }}">{{ tc.get_full_name|default:tc.username }} (@{{ tc.username }})</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div>
+            <button type="button" id="selectAllUnassignedBtn" class="btn btn-outline btn-sm">
+              <i data-lucide="check-square" style="width: 14px; height: 14px;"></i> Toggle Select All
+            </button>
+          </div>
+        </div>
+
+        <div class="table-responsive" style="max-height: 380px; overflow-y: auto; margin-bottom: 1.25rem; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+          <table class="table" style="margin-bottom: 0;">
+            <thead style="position: sticky; top: 0; background-color: var(--bg-secondary); z-index: 2;">
+              <tr>
+                <th style="width: 44px; text-align: center;">
+                  <input type="checkbox" id="masterUnassignedCheckbox" title="Select All Unassigned">
+                </th>
+                <th>Customer Name</th>
+                <th>Phone Number</th>
+                <th>Email</th>
+                <th>Company</th>
+                <th>Location</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for cust in customers %}
+                <tr>
+                  <td style="text-align: center;">
+                    <input type="checkbox" name="customer_ids" value="{{ cust.id }}" class="unassigned-cust-cb">
+                  </td>
+                  <td>
+                    <strong>{{ cust.name }}</strong>
+                  </td>
+                  <td>
+                    <span style="font-family: monospace;">{{ cust.phone }}</span>
+                  </td>
+                  <td style="color: var(--text-muted);">
+                    {{ cust.email|default:"—" }}
+                  </td>
+                  <td>
+                    {{ cust.company|default:"—" }}
+                  </td>
+                  <td style="color: var(--text-muted); font-size: 0.8rem;">
+                    {{ cust.city|default:"—" }}{% if cust.state %}, {{ cust.state }}{% endif %}
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 2.5rem 1rem;">
+                    <i data-lucide="check-circle" style="width: 32px; height: 32px; display: block; margin: 0 auto 0.5rem; color: var(--success); opacity: 0.7;"></i>
+                    <strong>All active customers in this campaign are currently assigned!</strong>
+                    <div style="font-size: 0.8rem; margin-top: 4px;">To transfer existing leads between agents, use the "Shift Customer" section below.</div>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+          <div style="font-size: 0.85rem; color: var(--text-muted);">
+            <span id="unassignedSelectedCount">0</span> customer(s) selected for assignment
+          </div>
+          <button type="submit" class="btn btn-primary" data-confirm="Confirm assigning selected customers to the designated tele-caller?">
+            <i data-lucide="user-plus"></i> Assign Selected
+          </button>
+        </div>
+      </form>
+    {% else %}
+      <div style="text-align: center; color: var(--text-muted); padding: 2rem;">
+        Please create or activate a campaign to assign customers.
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- SECTION 2: CURRENTLY ASSIGNED CUSTOMERS (SHIFT CUSTOMER) -->
+  <div class="card" id="shiftSection" style="border-top: 3px solid var(--primary);">
+    <div class="card-header" style="padding-bottom: 0.75rem;">
+      <div>
+        <h3 class="card-title" style="display: flex; align-items: center; gap: 0.5rem; font-size: 1.15rem;">
+          <i data-lucide="arrow-right-left" style="color: var(--warning);"></i> CURRENTLY ASSIGNED CUSTOMERS — SHIFT WORKLOAD
+        </h3>
+        <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
+          Transfer already-assigned customers from one tele-caller to another. <strong>Note:</strong> Historical call logs and responses remain permanently associated with the original caller.
+        </p>
+      </div>
+      <span class="badge badge-info" style="font-size: 0.8rem; font-weight: 700;">
+        {{ assigned_count }} Assigned
+      </span>
     </div>
-  </form>
+
+    {% if selected_campaign %}
+      <form method="POST" action="{% url 'customer_shift' %}" id="shiftForm">
+        {% csrf_token %}
+        <input type="hidden" name="campaign_id" value="{{ selected_campaign.id }}">
+
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.25rem; background-color: var(--bg-primary); padding: 1rem; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+          <div style="flex: 1; min-width: 260px;">
+            <label for="destination_telecaller_id" style="font-weight: 700; font-size: 0.9rem; margin-bottom: 0.35rem; display: block;">
+              Destination Tele-caller Agent <span style="color: var(--danger);">*</span>
+            </label>
+            <select id="destination_telecaller_id" name="destination_telecaller_id" class="form-select" required>
+              <option value="">-- Select Destination Tele-caller --</option>
+              {% for tc in telecallers %}
+                <option value="{{ tc.id }}">{{ tc.get_full_name|default:tc.username }} (@{{ tc.username }})</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div>
+            <button type="button" id="selectAllAssignedBtn" class="btn btn-outline btn-sm">
+              <i data-lucide="check-square" style="width: 14px; height: 14px;"></i> Toggle Select All
+            </button>
+          </div>
+        </div>
+
+        <div class="table-responsive" style="max-height: 380px; overflow-y: auto; margin-bottom: 1.25rem; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+          <table class="table" style="margin-bottom: 0;">
+            <thead style="position: sticky; top: 0; background-color: var(--bg-secondary); z-index: 2;">
+              <tr>
+                <th style="width: 44px; text-align: center;">
+                  <input type="checkbox" id="masterAssignedCheckbox" title="Select All Assigned">
+                </th>
+                <th>Customer Name</th>
+                <th>Phone Number</th>
+                <th>Currently Assigned Tele-caller</th>
+                <th>Assignment Status</th>
+                <th>Assigned Since</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for link in assigned_links %}
+                <tr>
+                  <td style="text-align: center;">
+                    <input type="checkbox" name="customer_ids" value="{{ link.customer.id }}" class="assigned-cust-cb" data-current-caller="{{ link.assigned_telecaller.id }}">
+                  </td>
+                  <td>
+                    <strong>{{ link.customer.name }}</strong>
+                    {% if link.customer.company %}
+                      <div style="font-size: 0.75rem; color: var(--text-muted);">{{ link.customer.company }}</div>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <span style="font-family: monospace;">{{ link.customer.phone }}</span>
+                  </td>
+                  <td>
+                    {% if link.assigned_telecaller %}
+                      <span class="badge badge-secondary" style="font-size: 0.8rem; font-weight: 600;">
+                        <i data-lucide="user" style="width: 12px; height: 12px; vertical-align: middle;"></i>
+                        {{ link.assigned_telecaller.get_full_name|default:link.assigned_telecaller.username }}
+                      </span>
+                    {% else %}
+                      <span class="badge badge-secondary">Unassigned</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <span class="badge {% if link.assignment_status == 'Completed' %}badge-success{% elif link.assignment_status == 'In Progress' %}badge-warning{% else %}badge-info{% endif %}">
+                      {{ link.assignment_status }}
+                    </span>
+                  </td>
+                  <td style="font-size: 0.8rem; color: var(--text-muted);">
+                    {{ link.assigned_at|date:"d M Y, H:i"|default:"—" }}
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 2.5rem 1rem;">
+                    <i data-lucide="info" style="width: 32px; height: 32px; display: block; margin: 0 auto 0.5rem; opacity: 0.5;"></i>
+                    No customers have been assigned in this campaign yet.
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+          <div style="font-size: 0.85rem; color: var(--text-muted);">
+            <span id="assignedSelectedCount">0</span> customer(s) selected to shift
+          </div>
+          <button type="submit" class="btn btn-warning" data-confirm="Confirm shifting selected customer(s) to the destination tele-caller? Historical call ownership will NOT be altered.">
+            <i data-lucide="arrow-right-left"></i> Shift Customer
+          </button>
+        </div>
+      </form>
+    {% endif %}
+  </div>
+
 </div>
 
 <script>
   document.addEventListener('DOMContentLoaded', () => {
-    const master = document.getElementById('masterCheckbox');
-    const checkboxes = document.querySelectorAll('.cust-checkbox');
-    const selectAllBtn = document.getElementById('selectAllBtn');
+    // 1. Unassigned Customers Selection
+    const masterUnassigned = document.getElementById('masterUnassignedCheckbox');
+    const unassignedCheckboxes = document.querySelectorAll('.unassigned-cust-cb');
+    const selectAllUnassignedBtn = document.getElementById('selectAllUnassignedBtn');
+    const unassignedSelectedCount = document.getElementById('unassignedSelectedCount');
 
-    if (master) {
-      master.addEventListener('change', () => {
-        checkboxes.forEach(cb => cb.checked = master.checked);
+    function updateUnassignedCount() {
+      if (!unassignedSelectedCount) return;
+      const count = document.querySelectorAll('.unassigned-cust-cb:checked').length;
+      unassignedSelectedCount.textContent = count;
+    }
+
+    if (masterUnassigned) {
+      masterUnassigned.addEventListener('change', () => {
+        unassignedCheckboxes.forEach(cb => cb.checked = masterUnassigned.checked);
+        updateUnassignedCount();
       });
     }
 
-    if (selectAllBtn) {
-      selectAllBtn.addEventListener('click', () => {
-        const allChecked = Array.from(checkboxes).every(cb => cb.checked);
-        checkboxes.forEach(cb => cb.checked = !allChecked);
-        if (master) master.checked = !allChecked;
+    if (selectAllUnassignedBtn) {
+      selectAllUnassignedBtn.addEventListener('click', () => {
+        const allChecked = Array.from(unassignedCheckboxes).every(cb => cb.checked);
+        unassignedCheckboxes.forEach(cb => cb.checked = !allChecked);
+        if (masterUnassigned) masterUnassigned.checked = !allChecked;
+        updateUnassignedCount();
+      });
+    }
+
+    unassignedCheckboxes.forEach(cb => {
+      cb.addEventListener('change', updateUnassignedCount);
+    });
+
+    // 2. Assigned Customers Selection (Shift)
+    const masterAssigned = document.getElementById('masterAssignedCheckbox');
+    const assignedCheckboxes = document.querySelectorAll('.assigned-cust-cb');
+    const selectAllAssignedBtn = document.getElementById('selectAllAssignedBtn');
+    const assignedSelectedCount = document.getElementById('assignedSelectedCount');
+
+    function updateAssignedCount() {
+      if (!assignedSelectedCount) return;
+      const count = document.querySelectorAll('.assigned-cust-cb:checked').length;
+      assignedSelectedCount.textContent = count;
+    }
+
+    if (masterAssigned) {
+      masterAssigned.addEventListener('change', () => {
+        assignedCheckboxes.forEach(cb => cb.checked = masterAssigned.checked);
+        updateAssignedCount();
+      });
+    }
+
+    if (selectAllAssignedBtn) {
+      selectAllAssignedBtn.addEventListener('click', () => {
+        const allChecked = Array.from(assignedCheckboxes).every(cb => cb.checked);
+        assignedCheckboxes.forEach(cb => cb.checked = !allChecked);
+        if (masterAssigned) masterAssigned.checked = !allChecked;
+        updateAssignedCount();
+      });
+    }
+
+    assignedCheckboxes.forEach(cb => {
+      cb.addEventListener('change', updateAssignedCount);
+    });
+
+    // 3. Prevent Client-side Shift to Same Tele-caller
+    const shiftForm = document.getElementById('shiftForm');
+    const destSelect = document.getElementById('destination_telecaller_id');
+    if (shiftForm && destSelect) {
+      shiftForm.addEventListener('submit', (e) => {
+        const selectedCbs = Array.from(document.querySelectorAll('.assigned-cust-cb:checked'));
+        if (selectedCbs.length === 0) {
+          alert('Please select at least one customer to shift.');
+          e.preventDefault();
+          return false;
+        }
+        const destId = destSelect.value;
+        if (!destId) {
+          alert('Please select a destination tele-caller.');
+          e.preventDefault();
+          return false;
+        }
+        const sameCallers = selectedCbs.filter(cb => cb.getAttribute('data-current-caller') === destId);
+        if (sameCallers.length === selectedCbs.length) {
+          alert('All selected customers are already assigned to this tele-caller. Please choose a different destination tele-caller.');
+          e.preventDefault();
+          return false;
+        }
       });
     }
   });

@@ -10,11 +10,14 @@
 
 {% block content %}
 <div class="card" style="margin-bottom: 1.5rem;">
-  <div class="card-header" style="flex-wrap: wrap; gap: 1rem;">
+  <div class="card-header" style="flex-wrap: wrap; gap: 1rem; display: flex; justify-content: space-between; align-items: flex-start;">
     <div>
       <h3 class="card-title">Follow-ups Schedule & Reminders</h3>
       <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">Track upcoming, completed, and overdue customer callback tasks</p>
     </div>
+    <a href="{% url 'help_center' %}#follow-ups" class="btn btn-outline btn-sm" style="font-size: 0.78rem; color: var(--primary);" title="Need help managing follow-ups?">
+      <i data-lucide="help-circle" style="width: 14px; height: 14px;"></i> Need help managing follow-ups? View FAQ →
+    </a>
   </div>
 
   <!-- Status Filter Pills -->
