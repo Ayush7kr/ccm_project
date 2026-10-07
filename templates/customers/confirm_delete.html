@@ -4,50 +4,72 @@
 {% block page_title %}Delete Customer{% endblock %}
 
 {% block content %}
-<div style="max-width: 560px; margin: 0 auto;">
-  <div class="card" style="border: 1px solid var(--danger); border-top: 4px solid var(--danger);">
+<div style="max-width: 580px; margin: 0 auto;">
+  <div class="card" style="border: 1px solid {% if has_history %}var(--warning){% else %}var(--danger){% endif %}; border-top: 4px solid {% if has_history %}var(--warning){% else %}var(--danger){% endif %};">
     <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.25rem;">
-      <div style="width: 48px; height: 48px; background-color: var(--danger-light); border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-        <i data-lucide="alert-triangle" style="width: 24px; height: 24px; color: var(--danger);"></i>
+      <div style="width: 48px; height: 48px; background-color: {% if has_history %}var(--warning-light){% else %}var(--danger-light){% endif %}; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+        <i data-lucide="{% if has_history %}archive{% else %}alert-triangle{% endif %}" style="width: 24px; height: 24px; color: {% if has_history %}var(--warning){% else %}var(--danger){% endif %};"></i>
       </div>
       <div>
-        <h2 style="font-size: 1.2rem; font-weight: 700; color: var(--danger);">Confirm Customer Deletion</h2>
-        <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 2px;">This action cannot be undone.</p>
+        <h2 style="font-size: 1.2rem; font-weight: 700; color: {% if has_history %}var(--warning){% else %}var(--danger){% endif %};">
+          {% if has_history %}Archive Customer Profile{% else %}Confirm Customer Deletion{% endif %}
+        </h2>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 2px;">
+          {% if has_history %}Historical preservation policy active{% else %}This action cannot be undone.{% endif %}
+        </p>
       </div>
     </div>
 
-    <div style="padding: 1rem; background-color: var(--danger-light); border-radius: var(--radius-sm); margin-bottom: 1.25rem;">
+    <div style="padding: 1rem; background-color: var(--bg-primary); border-radius: var(--radius-sm); margin-bottom: 1.25rem; border: 1px solid var(--border-color);">
       <p style="font-size: 0.9rem; color: var(--text-main); font-weight: 500;">
-        You are about to permanently delete customer:
+        {% if has_history %}You are about to archive customer:{% else %}You are about to permanently delete customer:{% endif %}
       </p>
-      <p style="font-size: 1.1rem; font-weight: 700; margin-top: 0.5rem; color: var(--danger);">
+      <p style="font-size: 1.1rem; font-weight: 700; margin-top: 0.5rem; color: var(--text-main);">
         {{ customer.name }}
       </p>
       <p style="font-size: 0.82rem; color: var(--text-muted); margin-top: 0.25rem;">
-        Phone: {{ customer.phone }}{% if customer.email %} &bull; Email: {{ customer.email }}{% endif %}{% if customer.company %} &bull; {{ customer.company }}{% endif %}
+        Phone: {{ customer.phone }}
+        {% if customer.whatsapp_number %} &bull; WhatsApp: {{ customer.whatsapp_number }}{% endif %}
+        {% if customer.email %} &bull; Email: {{ customer.email }}{% endif %}
+        {% if customer.company %} &bull; {{ customer.company }}{% endif %}
       </p>
     </div>
 
-    <div style="padding: 0.75rem 1rem; background-color: var(--warning-light); border-radius: var(--radius-sm); border-left: 3px solid var(--warning); margin-bottom: 1.5rem;">
-      <p style="font-size: 0.85rem; color: var(--text-main); font-weight: 600; margin-bottom: 0.3rem;">
-        <i data-lucide="info" style="width: 14px; height: 14px; vertical-align: middle;"></i> This will also delete:
+    {% if has_history %}
+    <div style="padding: 0.9rem 1rem; background-color: var(--warning-light); border-radius: var(--radius-sm); border-left: 3px solid var(--warning); margin-bottom: 1.5rem;">
+      <p style="font-size: 0.88rem; color: var(--text-main); font-weight: 700; margin-bottom: 0.35rem;">
+        <i data-lucide="shield-check" style="width: 15px; height: 15px; vertical-align: middle; color: var(--warning);"></i> Historical Business Data Safeguard
       </p>
-      <ul style="font-size: 0.82rem; color: var(--text-muted); list-style: disc; padding-left: 1.25rem; line-height: 1.8;">
-        <li>All campaign assignments for this customer</li>
-        <li>All call records made for this customer</li>
-        <li>All questionnaire responses collected from calls</li>
-        <li>All scheduled follow-ups for this customer</li>
+      <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.5rem; line-height: 1.5;">
+        This customer has recorded historical activity (campaign assignments, call logs, questionnaire responses, or follow-ups). 
+        To ensure audit compliance and preserve historical analytics, this customer will be <strong>archived/deactivated</strong> rather than deleted.
+      </p>
+      <ul style="font-size: 0.8rem; color: var(--text-muted); list-style: disc; padding-left: 1.25rem; line-height: 1.7;">
+        <li>Archived customers will NOT appear as eligible leads for new campaign assignments.</li>
+        <li>All historical calls, questionnaire responses, and performance reports remain fully intact.</li>
+        <li>Administrators can reactivate this customer at any time from their profile.</li>
       </ul>
     </div>
+    {% else %}
+    <div style="padding: 0.75rem 1rem; background-color: var(--danger-light); border-radius: var(--radius-sm); border-left: 3px solid var(--danger); margin-bottom: 1.5rem;">
+      <p style="font-size: 0.85rem; color: var(--text-main); font-weight: 600; margin-bottom: 0.3rem;">
+        <i data-lucide="trash-2" style="width: 14px; height: 14px; vertical-align: middle; color: var(--danger);"></i> Permanent Deletion Notice:
+      </p>
+      <p style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.6;">
+        This customer has no recorded calls or campaign history and will be completely removed from the database.
+      </p>
+    </div>
+    {% endif %}
 
     <form method="POST" action="{% url 'customer_delete' customer.pk %}">
       {% csrf_token %}
       <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
         <a href="{% url 'customer_detail' customer.pk %}" class="btn btn-secondary">
-          <i data-lucide="x"></i> Cancel — Keep Customer
+          <i data-lucide="x"></i> Cancel
         </a>
-        <button type="submit" class="btn btn-danger">
-          <i data-lucide="trash-2"></i> Yes, Delete Permanently
+        <button type="submit" class="btn {% if has_history %}btn-warning{% else %}btn-danger{% endif %}">
+          <i data-lucide="{% if has_history %}archive{% else %}trash-2{% endif %}"></i> 
+          {% if has_history %}Confirm & Archive Customer{% else %}Yes, Delete Permanently{% endif %}
         </button>
       </div>
     </form>

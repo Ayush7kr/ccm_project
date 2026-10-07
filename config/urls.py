@@ -47,6 +47,7 @@ urlpatterns = [
     path('customers/<int:pk>/', customer_views.customer_detail, name='customer_detail'),
     path('customers/<int:pk>/edit/', customer_views.customer_edit, name='customer_edit'),
     path('customers/<int:pk>/delete/', customer_views.customer_delete, name='customer_delete'),
+    path('customers/<int:pk>/restore/', customer_views.customer_restore, name='customer_restore'),
     path('customers/import/', customer_views.customer_import, name='customer_import'),
     path('customers/import/sample/', customer_views.customer_import_sample, name='customer_import_sample'),
     path('customers/assign/', customer_views.customer_assign, name='customer_assign'),

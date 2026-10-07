@@ -117,3 +117,24 @@ sequenceDiagram
 1. **One-Time Use**: Tokens become invalid as soon as the password is changed because the token hash includes the user's password hash timestamp.
 2. **Time-Limited**: Tokens automatically expire after Django's `PASSWORD_RESET_TIMEOUT` (default: 3 days).
 3. **No Credential Exposure**: Administrators never see the new password chosen by the user.
+
+---
+
+## 7. Tele-caller Self-Registration (`/register/`)
+
+CCM provides a secure, streamlined self-registration portal for prospective tele-callers:
+
+1. **Strict Role Pinning**:
+   - The registration view ([`accounts/views.py`](file:///f:/CCM/accounts/views.py)) hardcodes `role='TELE_CALLER'` in the `User.objects.create_user()` call.
+   - Attackers cannot pass `role=ADMIN` or manipulate POST bodies to achieve privilege escalation.
+2. **Server-Side Validation**:
+   - **Username**: Must follow `^[a-zA-Z0-9_.]+$` and be unique across the system.
+   - **Full Name**: First name and last name are strictly required.
+   - **Email**: Must be a valid email format and globally unique.
+   - **Password Security**: Minimum 6 characters with mandatory confirmation match.
+   - **Terms Agreement**: Form submission requires explicit terms of service acceptance.
+3. **Immediate Provisioning & Notification**:
+   - Registered users are instantly authenticated via `login(request, user)` and redirected to their personal `/dashboard/` queue.
+   - An in-app `Welcome to CCM!` notification is created for the new agent.
+   - An alert notification is dispatched to all active administrators notifying them of the new registration.
+

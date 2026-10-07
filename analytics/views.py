@@ -34,8 +34,9 @@ def dashboard(request):
         return telecaller_dashboard(request)
 
 def admin_dashboard(request):
-    from calls.views import update_overdue_followups
+    from calls.views import update_overdue_followups, check_inactive_telecallers
     update_overdue_followups()
+    check_inactive_telecallers()
 
     total_campaigns = Campaign.objects.count()
     active_campaigns = Campaign.objects.filter(status='Active').count()

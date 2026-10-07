@@ -259,17 +259,26 @@ class Command(BaseCommand):
 
         customers = []
         for name, phone, email, company, city, state in customer_samples:
-            cust, _ = Customer.objects.get_or_create(
+            cust, created = Customer.objects.get_or_create(
                 phone=phone,
                 defaults={
                     'name': name,
+                    'whatsapp_number': phone,
                     'email': email,
                     'company': company,
                     'city': city,
                     'state': state,
+                    'notes': f"Key lead in {city} for enterprise solutions. Prefers contact during standard business hours.",
+                    'is_active': True,
                     'source': 'Sample Seed'
                 }
             )
+            if not created:
+                if not cust.whatsapp_number:
+                    cust.whatsapp_number = phone
+                if not cust.notes:
+                    cust.notes = f"Key lead in {city} for enterprise solutions. Prefers contact during standard business hours."
+                cust.save()
             customers.append(cust)
 
         # 5. Assignments and Call History

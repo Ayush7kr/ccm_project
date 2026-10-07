@@ -23,6 +23,7 @@
 
       <div style="font-size: 0.9rem; color: var(--text-main); display: flex; align-items: center; gap: 1.25rem; flex-wrap: wrap; margin-bottom: 0.5rem;">
         <span><i data-lucide="phone" style="width: 15px; height: 15px; vertical-align: middle; color: var(--primary);"></i> <strong>{{ customer.phone }}</strong></span>
+        {% if customer.whatsapp_number %}<span><i data-lucide="message-circle" style="width: 15px; height: 15px; vertical-align: middle; color: #25d366;"></i> WhatsApp: <strong>{{ customer.whatsapp_number }}</strong></span>{% endif %}
         {% if customer.email %}<span><i data-lucide="mail" style="width: 15px; height: 15px; vertical-align: middle; color: var(--text-muted);"></i> {{ customer.email }}</span>{% endif %}
         {% if customer.company %}<span><i data-lucide="building" style="width: 15px; height: 15px; vertical-align: middle; color: var(--text-muted);"></i> {{ customer.company }}</span>{% endif %}
         {% if customer.city %}<span><i data-lucide="map-pin" style="width: 15px; height: 15px; vertical-align: middle; color: var(--text-muted);"></i> {{ customer.city }}{% if customer.state %}, {{ customer.state }}{% endif %}</span>{% endif %}

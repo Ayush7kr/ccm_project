@@ -4,6 +4,34 @@ All notable changes to the **CCM (Campaign Call Manager)** project during this d
 
 ---
 
+## [Phase 12] — Final Requirement Alignment, Omnichannel Contacts, Historical Data Integrity & Notification Hardening
+
+### Customer Omnichannel Contacts & Profile Notes
+- **WhatsApp Integration & Direct Chat Links**: Added optional `whatsapp_number` to `Customer` model with server-side length validation (minimum 7 digits), direct WhatsApp chat link (`https://wa.me/...`), and WhatsApp badge display across directory tables.
+- **Persistent Customer Profile Notes**: Implemented persistent `notes = models.TextField(blank=True)` on `Customer` model and dedicated "Customer Profile Notes" card in customer detail view, giving tele-callers instant context.
+- **Calling Console Integration**: Displayed customer's WhatsApp number and persistent profile notes directly in the live tele-caller call console header.
+
+### Historical Data Integrity & Archive Lifecycle
+- **Deactivation/Archiving Safeguard**: Replaced destructive cascade hard-deletion with an archive/deactivation pattern (`is_active = False`) whenever a customer has existing historical records (call records, follow-ups, or campaign links).
+- **Customer Restore Action**: Added dedicated `@admin_required` POST endpoint `/customers/<pk>/restore/` to reactivate archived customer records.
+- **Directory Activity Filter**: Added `Active` vs `Archived` filtering to Customer Directory table with badges and restore actions.
+- **Assignment Lead Protection**: Excluded inactive/archived customers from tele-caller campaign assignments (`customer_assign`).
+
+### Spreadsheet Import Enhancements
+- **Omnichannel Ingestion**: Updated CSV and modern Excel (`.xlsx`) import engines to validate, extract, and populate `whatsapp_number` and `notes`.
+- **Sample Template Update**: Updated sample CSV template (`customer_import_sample`) to include `whatsapp_number` and `notes` columns with realistic examples.
+
+### Automated Notification Lifecycle Hardening
+- **Campaign Milestone Alerts (70%)**: Implemented threshold detection alerting all active administrators when a campaign completes 70% of target calls, with duplicate alert suppression.
+- **Inactive Tele-caller Detection**: Implemented operational check identifying active tele-callers with assigned leads who have logged no calls in the past 7 days.
+- **Notification Auto-Clearing**: Automatically marks related follow-up notifications as read when an agent completes or cancels a follow-up task.
+
+### Quality Assurance & Test Suite Expansion
+- **Zero-Failure Test Suite**: Expanded test coverage with 14 new comprehensive regression tests across `customers.tests` and `calls.tests_audit_hardening`.
+- **100% Passing Tests**: All unit, integration, RBAC, and operational tests pass with 0 failures and 0 errors.
+
+---
+
 ## [Phase 11] — Production Readiness, WhiteNoise Static Asset Serving & Platform Hardening
 
 ### Production Static Serving & Performance

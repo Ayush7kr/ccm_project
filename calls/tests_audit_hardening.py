@@ -408,3 +408,156 @@ class AuditHardeningTests(TestCase):
         self.assertIsNotNone(existing_fu.call_record)
         self.assertEqual(existing_fu.call_record.comments, 'Second call made')
 
+    # 14. Campaign milestone 70% notification trigger
+    def test_campaign_milestone_notification_trigger_and_deduplication(self):
+        """When campaign reaches 70% completed calls threshold, milestone notification is sent without spam duplicate."""
+        self.campaign.target_calls = 10
+        self.campaign.save()
+
+        # Create 6 completed calls (60%)
+        for i in range(6):
+            cust = Customer.objects.create(name=f'Milestone Cust {i}', phone=f'+1555000100{i}')
+            CallRecord.objects.create(
+                campaign=self.campaign,
+                customer=cust,
+                telecaller=self.tc1,
+                call_status='Completed',
+                call_start_time=timezone.now(),
+                duration=60
+            )
+
+        # Before 70%, no milestone notification
+        self.assertFalse(Notification.objects.filter(
+            notification_type='campaign_milestone',
+            related_object_type='campaign',
+            related_object_id=self.campaign.id
+        ).exists())
+
+        # 7th call recorded via record_call view -> triggers 70% milestone!
+        self.client.login(username='tc_one', password='password123')
+        cust7 = Customer.objects.create(name='Milestone Cust 7', phone='+15550001007')
+        assign7 = CampaignCustomer.objects.create(
+            campaign=self.campaign,
+            customer=cust7,
+            assigned_telecaller=self.tc1,
+            assignment_status='Assigned'
+        )
+        self.client.post(reverse('record_call', kwargs={'assignment_id': assign7.pk}), {
+            'call_status': 'Completed',
+            'duration': '90',
+            'comments': '7th call reaching 70%'
+        }, follow=True)
+
+        milestone_notifs = Notification.objects.filter(
+            notification_type='campaign_milestone',
+            related_object_type='campaign',
+            related_object_id=self.campaign.id
+        )
+        self.assertTrue(milestone_notifs.exists())
+        self.assertIn('70%', milestone_notifs.first().title)
+        initial_notif_count = milestone_notifs.count()
+
+        # 8th call recorded -> should NOT send duplicate 70% milestone notification
+        cust8 = Customer.objects.create(name='Milestone Cust 8', phone='+15550001008')
+        assign8 = CampaignCustomer.objects.create(
+            campaign=self.campaign,
+            customer=cust8,
+            assigned_telecaller=self.tc1,
+            assignment_status='Assigned'
+        )
+        self.client.post(reverse('record_call', kwargs={'assignment_id': assign8.pk}), {
+            'call_status': 'Completed',
+            'duration': '100',
+            'comments': '8th call'
+        }, follow=True)
+
+        final_notif_count = Notification.objects.filter(
+            notification_type='campaign_milestone',
+            related_object_type='campaign',
+            related_object_id=self.campaign.id
+        ).count()
+        self.assertEqual(initial_notif_count, final_notif_count)
+
+    # 15. Follow-up completion and cancellation auto-clears unread notifications
+    def test_followup_auto_clears_unread_notification(self):
+        """Completing or cancelling a follow-up automatically marks related notifications as read."""
+        self.client.login(username='tc_one', password='password123')
+        fu1 = FollowUp.objects.create(
+            customer=self.customer,
+            assigned_to=self.tc1,
+            scheduled_date=timezone.now().date() + timedelta(days=2),
+            scheduled_time='10:00',
+            status='Pending'
+        )
+        notif1 = Notification.objects.create(
+            recipient=self.tc1,
+            notification_type='followup',
+            title='Reminder',
+            message='Upcoming call',
+            related_object_type='followup',
+            related_object_id=fu1.id,
+            is_read=False
+        )
+
+        # Complete fu1
+        self.client.post(reverse('followup_complete', kwargs={'pk': fu1.pk}))
+        notif1.refresh_from_db()
+        self.assertTrue(notif1.is_read)
+
+        # Cancel fu2
+        fu2 = FollowUp.objects.create(
+            customer=self.customer,
+            assigned_to=self.tc1,
+            scheduled_date=timezone.now().date() + timedelta(days=3),
+            scheduled_time='11:00',
+            status='Pending'
+        )
+        notif2 = Notification.objects.create(
+            recipient=self.tc1,
+            notification_type='followup',
+            title='Reminder 2',
+            message='Upcoming call 2',
+            related_object_type='followup',
+            related_object_id=fu2.id,
+            is_read=False
+        )
+        self.client.post(reverse('followup_cancel', kwargs={'pk': fu2.pk}))
+        notif2.refresh_from_db()
+        self.assertTrue(notif2.is_read)
+
+    # 16. Inactive tele-caller detection notification
+    def test_inactive_telecaller_notification_trigger(self):
+        """Telecaller with active campaign assignments but no calls in last 7 days triggers admin notification."""
+        from calls.views import check_inactive_telecallers
+
+        # tc2 has assignment
+        cust_tc2 = Customer.objects.create(name='TC2 Cust', phone='+15550009999')
+        CampaignCustomer.objects.create(
+            campaign=self.campaign,
+            customer=cust_tc2,
+            assigned_telecaller=self.tc2,
+            assignment_status='Assigned'
+        )
+        # Set date_joined to 10 days ago
+        self.tc2.date_joined = timezone.now() - timedelta(days=10)
+        self.tc2.save()
+
+        # Run check
+        check_inactive_telecallers()
+
+        alert = Notification.objects.filter(
+            recipient=self.admin_user,
+            notification_type='inactive_telecaller',
+            related_object_type='telecaller',
+            related_object_id=self.tc2.id
+        ).first()
+        self.assertIsNotNone(alert)
+        self.assertIn(self.tc2.username, alert.title)
+
+        # Running again should not create duplicate unread notification
+        count_before = Notification.objects.filter(recipient=self.admin_user, notification_type='inactive_telecaller').count()
+        check_inactive_telecallers()
+        count_after = Notification.objects.filter(recipient=self.admin_user, notification_type='inactive_telecaller').count()
+        self.assertEqual(count_before, count_after)
+
+

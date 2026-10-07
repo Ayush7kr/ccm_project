@@ -86,3 +86,31 @@ These views guarantee that stack traces, database schema definitions, internal f
 Furthermore, error templates employ a **dual-state inheritance pattern**:
 - **Authenticated Users**: Error cards render seamlessly inside the secure dashboard layout with contextual return actions (e.g. Return to Dashboard or Switch Account).
 - **Anonymous Visitors**: Error cards render centered within the public authentication container with safe navigation links (Back to Home, Sign In), preventing blank-screen render failures while strictly preventing leakage of internal navigation elements.
+
+---
+
+## 6. Tele-caller Self-Registration Security Controls
+
+The public tele-caller registration portal (`/register/`) includes explicit defense measures against unauthorized privilege elevation:
+
+1. **Role Pinning**: The registration controller hardcodes `role='TELE_CALLER'` in the Python creation method. It never inspects form inputs for role assignment, preventing privilege escalation to `ADMIN`.
+2. **Server-Side Validation**:
+   - Username: Sanitized and restricted to `^[a-zA-Z0-9_.]+$`.
+   - Email: Validated for RFC compliance and uniqueness.
+   - Password: Minimum 6 characters with mandatory confirmation match.
+   - Terms Acceptance: Explicit agreement flag required before user creation.
+3. **Cryptographic Protection**: Passwords are saved exclusively through `create_user()`, ensuring PBKDF2 hashing with salt.
+
+---
+
+## 7. Historical Data Safety & Non-Destructive Archiving
+
+To prevent permanent loss of historical reporting records and compliance data:
+
+1. **Soft-Deletion Archive Pattern**:
+   - When an administrator deletes a customer, the system evaluates relationship history (`call_records`, `follow_ups`, `campaign_links`).
+   - If historical records exist, the customer is deactivated (`is_active = False`) and archived rather than executing an irreversible SQL `CASCADE DELETE`.
+   - Call records, questionnaire responses, and callback audit trails remain intact for accurate analytics.
+2. **Hard-Deletion Isolation**: Permanent database deletion is permitted only for newly created or uncontacted test leads with zero operational history.
+3. **Reactivation Workflow**: Archived customer records can be restored by administrators at any time via a protected `@admin_required` POST endpoint (`/customers/<id>/restore/`).
+

@@ -98,7 +98,7 @@ This command provisions:
   - `telecaller3` (password: `password123`)
 - **Active Campaigns**: e.g., *Customer Retention & Loyalty Drive*, *Q4 Enterprise Outreach*
 - **Questionnaires**: With single-choice, multiple-choice, rating scale, and open-ended questions.
-- **Customers**: Pre-enrolled and assigned to tele-callers.
+- **Customers**: Pre-enrolled and assigned to tele-callers with phone numbers, optional WhatsApp numbers, and persistent profile notes.
 - **Call Records & Follow-ups**: Realistic duration, outcomes, and scheduled callbacks.
 
 ---
@@ -117,6 +117,7 @@ http://127.0.0.1:8000/
 
 - **Root URL (`/`)**: Displays the Public SaaS Landing Page.
 - **Sign In (`/login/`)**: Displays the Role Selection and Authentication Portal.
+- **Self-Registration (`/register/`)**: Displays the Tele-caller Onboarding Portal.
 - **Health Check (`/health/`)**: Returns JSON health status of web server and database.
 
 ---
@@ -130,6 +131,6 @@ python manage.py test
 
 Expected output:
 ```text
-Ran 134 tests in ~210s
+Ran 148 tests
 OK
 ```

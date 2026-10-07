@@ -106,11 +106,14 @@ Central contact entity across all campaigns.
 | `id` | `BigAutoField` | PK | Unique identifier. |
 | `name` | `CharField(255)` | | Customer / lead full name. |
 | `phone` | `CharField(20)` | `db_index=True` | Primary contact number. |
+| `whatsapp_number` | `CharField(20)` | Blank, Null | Optional secondary contact number for WhatsApp messaging and direct chat links. |
 | `email` | `EmailField` | Blank, Null | Contact email. |
 | `company` | `CharField(255)` | Blank | Organization name. |
 | `address` | `TextField` | Blank | Physical location / address. |
 | `city` | `CharField(100)` | Blank | City. |
 | `state` | `CharField(100)` | Blank | State / Region. |
+| `notes` | `TextField` | Blank | Persistent profile notes and background context regarding the customer. |
+| `is_active` | `BooleanField` | default=`True`, `db_index=True` | Active status flag; deactivation archives the customer preserving historical call records and follow-ups. |
 | `source` | `CharField(100)` | default=`'Direct Input'` | e.g. `'CSV Import'`, `'Direct Input'`. |
 
 #### `CampaignCustomer`

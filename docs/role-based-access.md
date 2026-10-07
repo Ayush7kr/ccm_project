@@ -40,9 +40,11 @@ CCM defines two mutually exclusive roles on the custom `User` model:
 | **Campaigns: Edit / Delete / Toggle** | ✅ Allowed | ❌ **HTTP 403 Forbidden** | `@admin_required` decorator |
 | **Questionnaire Builder** | ✅ Allowed | ❌ **HTTP 403 Forbidden** | `@admin_required` decorator |
 | **Customers: Directory** (`/customers/`) | Organization-wide | Assigned Customers Only | Queryset filtering on user assignments |
-| **Customers: Create / Edit / Delete** | ✅ Allowed | ❌ **HTTP 403 Forbidden** | `@admin_required` decorator |
+| **Customers: Create / Edit / Archive / Delete** | ✅ Allowed | ❌ **HTTP 403 Forbidden** | `@admin_required` decorator |
+| **Customers: Restore Archived** (`/customers/<id>/restore/`) | ✅ Allowed | ❌ **HTTP 403 Forbidden** | `@admin_required` decorator |
 | **Customers: CSV/XLSX Import & Assign** | ✅ Allowed | ❌ **HTTP 403 Forbidden** | `@admin_required` decorator |
 | **Customers: Detail** (`/customers/<id>/`) | All Customers | Assigned Customers Only | IDOR check (`is_assigned` verification) |
+| **Tele-caller Self-Registration** (`/register/`) | Public / All | Public / All | Hardcoded `role='TELE_CALLER'` in Python |
 | **Tele-caller Roster & Detail** | ✅ Allowed | ❌ **HTTP 403 Forbidden** | `@admin_required` decorator |
 | **Tele-caller Password Reset** | ✅ Allowed | ❌ **HTTP 403 Forbidden** | `@admin_required` decorator |
 | **Live Call Console** (`/calls/record/<id>/`) | ❌ **HTTP 403 Forbidden** | Assigned Workload Only | `@telecaller_required` & assignment check |

@@ -11,6 +11,9 @@ class Customer(models.Model):
     city = models.CharField(max_length=100, blank=True)
     state = models.CharField(max_length=100, blank=True)
     source = models.CharField(max_length=100, default='Direct Input')
+    whatsapp_number = models.CharField(max_length=20, blank=True, null=True)
+    notes = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

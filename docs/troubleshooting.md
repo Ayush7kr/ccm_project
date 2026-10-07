@@ -96,3 +96,25 @@ This document catalogs common issues, causes, and solutions encountered during d
 - **Cause**: Historical template inheritance bug where unauthenticated error views rendered empty layout blocks.
 - **Solution**:
   - CCM error templates now utilize dual-state inheritance (`content` inside authenticated dashboard; `auth_content` centered in public auth wrapper) providing clean error cards and navigation for all visitors.
+
+---
+
+## 7. Customer Archiving & Restoration
+
+### Issue: "Deleted customer is still visible in the database"
+- **Cause**: To protect historical reporting and compliance integrity, deleting a customer who has existing call records, follow-ups, or campaign links deactivates them (`is_active = False`) rather than permanently deleting them from SQLite/PostgreSQL.
+- **Solution**:
+  - This is intentional historical protection. In the customer list table, filter by **Activity: Active** to exclude archived customers.
+  - To reactivate an archived customer, open their customer detail page (`/customers/<id>/`) as an administrator and click **"Reactivate Customer"** (or send `POST /customers/<id>/restore/`).
+  - Only test customers with zero historical calls or links are hard-deleted.
+
+---
+
+## 8. Follow-up Action Dropdowns
+
+### Issue: "Action dropdown is missing from a follow-up table row"
+- **Cause**: The follow-up is in a terminal state (`Completed` or `Cancelled`).
+- **Solution**:
+  - By design, action menus (`Mark Complete`, `Reschedule`, `Cancel`) only render on active tasks (`Pending` or `Overdue`).
+  - Completed and Cancelled rows render static status badges to prevent invalid state re-transitions.
+

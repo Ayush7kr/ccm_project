@@ -13,7 +13,7 @@
   </div>
 
   <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem;">
-    Upload a CSV or Excel file containing customer lead information. Supported columns include: <code>name</code>, <code>phone</code>, <code>email</code>, <code>company</code>, <code>address</code>, <code>city</code>, <code>state</code>.
+    Upload a CSV or Excel file containing customer lead information. Supported columns include: <code>name</code>, <code>phone</code>, <code>whatsapp_number</code> (optional), <code>email</code> (optional), <code>company</code>, <code>address</code>, <code>city</code>, <code>state</code>, <code>notes</code> (optional profile notes).
   </p>
 
   <form method="POST" action="{% url 'customer_import' %}" enctype="multipart/form-data">

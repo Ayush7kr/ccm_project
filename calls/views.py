@@ -55,6 +55,54 @@ def update_overdue_followups(user=None):
 from django.db.models import Q
 from accounts.models import User
 
+def check_inactive_telecallers():
+    """
+    Check for tele-callers who are active and have assigned campaign leads,
+    but have logged no calls in the last 7 days.
+    Creates a notification for administrators (avoids daily duplicates).
+    """
+    from datetime import timedelta
+    cutoff = timezone.now() - timedelta(days=7)
+    telecallers = User.objects.filter(role='TELE_CALLER', is_active=True)
+    admin_users = User.objects.filter(role='ADMIN', is_active=True)
+    if not admin_users.exists():
+        return
+
+    for tc in telecallers:
+        has_assignments = CampaignCustomer.objects.filter(
+            assigned_telecaller=tc,
+            campaign__status='Active'
+        ).exists()
+        if not has_assignments:
+            continue
+
+        last_call = CallRecord.objects.filter(telecaller=tc).order_by('-created_at').first()
+        is_inactive = False
+        if last_call is None:
+            if tc.date_joined < timezone.now() - timedelta(days=3):
+                is_inactive = True
+        elif last_call.created_at < cutoff:
+            is_inactive = True
+
+        if is_inactive:
+            for admin in admin_users:
+                already_notified = Notification.objects.filter(
+                    recipient=admin,
+                    notification_type='inactive_telecaller',
+                    related_object_type='telecaller',
+                    related_object_id=tc.id,
+                    is_read=False
+                ).exists()
+                if not already_notified:
+                    Notification.objects.create(
+                        recipient=admin,
+                        notification_type='inactive_telecaller',
+                        title=f"Inactive Tele-caller Alert: {tc.get_full_name() or tc.username}",
+                        message=f"Tele-caller {tc.get_full_name() or tc.username} has active campaign assignments but has not logged any calls in the last 7 days.",
+                        related_object_type='telecaller',
+                        related_object_id=tc.id
+                    )
+
 @login_required
 def call_list(request):
     """View call logs history with comprehensive multi-criteria filtering"""
@@ -272,6 +320,28 @@ def record_call(request, assignment_id):
                     related_object_id=customer.id
                 )
 
+        # Campaign milestone trigger (e.g. 70% completed calls threshold)
+        if call_status == 'Completed' and campaign.target_calls > 0:
+            completed_calls_cnt = CallRecord.objects.filter(campaign=campaign, call_status='Completed').count()
+            comp_pct = (completed_calls_cnt / campaign.target_calls) * 100
+            if comp_pct >= 70:
+                milestone_sent = Notification.objects.filter(
+                    notification_type='campaign_milestone',
+                    related_object_type='campaign',
+                    related_object_id=campaign.id,
+                    title__contains='70%'
+                ).exists()
+                if not milestone_sent:
+                    for admin in User.objects.filter(role='ADMIN', is_active=True):
+                        Notification.objects.create(
+                            recipient=admin,
+                            notification_type='campaign_milestone',
+                            title=f"Campaign Milestone: {campaign.name} reached 70%",
+                            message=f"Campaign '{campaign.name}' has achieved {completed_calls_cnt} of {campaign.target_calls} target calls ({int(comp_pct)}%).",
+                            related_object_type='campaign',
+                            related_object_id=campaign.id
+                        )
+
         messages.success(request, f"Call recorded successfully for {customer.name}.")
         return redirect('call_success', call_id=call_record.id)
 
@@ -343,6 +413,12 @@ def followup_complete(request, pk):
 
         followup.status = 'Completed'
         followup.save()
+        # Mark pending follow-up notifications as read
+        Notification.objects.filter(
+            related_object_type='followup',
+            related_object_id=followup.id,
+            is_read=False
+        ).update(is_read=True)
         messages.success(request, f"Follow-up task for {followup.customer.name} marked as completed.")
 
     return redirect('followup_list')
@@ -362,6 +438,12 @@ def followup_cancel(request, pk):
 
         followup.status = 'Cancelled'
         followup.save()
+        # Mark pending follow-up notifications as read
+        Notification.objects.filter(
+            related_object_type='followup',
+            related_object_id=followup.id,
+            is_read=False
+        ).update(is_read=True)
         messages.success(request, f"Follow-up for {followup.customer.name} has been cancelled.")
 
     return redirect('followup_list')

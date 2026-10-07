@@ -6,22 +6,42 @@
 {% block content %}
 <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
   <div>
-    <h2 style="font-size: 1.4rem; font-weight: 700;">{{ customer.name }}</h2>
-    <p style="font-size: 0.85rem; color: var(--text-muted);">
-      Phone: <strong>{{ customer.phone }}</strong> &bull; Email: {{ customer.email|default:"No email" }} &bull; Company: {{ customer.company|default:"N/A" }}
+    <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
+      <h2 style="font-size: 1.4rem; font-weight: 700; margin: 0;">{{ customer.name }}</h2>
+      {% if not customer.is_active %}
+        <span class="badge badge-secondary" style="font-size: 0.75rem; background: var(--bg-tertiary); color: var(--text-muted); border: 1px dashed var(--border-color);">Archived</span>
+      {% else %}
+        <span class="badge badge-success" style="font-size: 0.75rem;">Active</span>
+      {% endif %}
+    </div>
+    <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">
+      Phone: <strong>{{ customer.phone }}</strong>
+      {% if customer.whatsapp_number %} &bull; WhatsApp: <strong>{{ customer.whatsapp_number }}</strong>{% endif %}
+      &bull; Email: {{ customer.email|default:"No email" }} &bull; Company: {{ customer.company|default:"N/A" }}
     </p>
   </div>
 
-  <div style="display: flex; gap: 0.75rem;">
+  <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
     {% if active_assignment and user.is_telecaller_user and active_assignment.assigned_telecaller == user %}
     <a href="{% url 'record_call' active_assignment.pk %}" class="btn btn-primary" style="font-weight: 700;">
       <i data-lucide="phone"></i> Call Console
     </a>
     {% endif %}
     {% if user.is_admin_user %}
-    <a href="{% url 'customer_edit' customer.pk %}" class="btn btn-outline">
-      <i data-lucide="edit-3"></i> Edit
-    </a>
+      {% if not customer.is_active %}
+      <form method="POST" action="{% url 'customer_restore' customer.pk %}" style="display: inline;">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-outline" style="color: var(--success); border-color: var(--success);">
+          <i data-lucide="rotate-ccw"></i> Reactivate
+        </button>
+      </form>
+      {% endif %}
+      <a href="{% url 'customer_edit' customer.pk %}" class="btn btn-outline">
+        <i data-lucide="edit-3"></i> Edit
+      </a>
+      <a href="{% url 'customer_delete' customer.pk %}" class="btn btn-outline" style="color: var(--danger); border-color: var(--danger);">
+        <i data-lucide="trash-2"></i> {% if customer.is_active %}Archive / Delete{% else %}Delete{% endif %}
+      </a>
     {% endif %}
     <a href="{% url 'customer_list' %}" class="btn btn-secondary">
       <i data-lucide="arrow-left"></i> Directory
@@ -132,12 +152,31 @@
       <h3 class="card-title" style="margin-bottom: 1rem;">Contact Info</h3>
       <div style="display: flex; flex-direction: column; gap: 0.6rem; font-size: 0.85rem;">
         <div><span style="color: var(--text-muted);">Phone:</span> <strong>{{ customer.phone }}</strong></div>
+        {% if customer.whatsapp_number %}
+        <div>
+          <span style="color: var(--text-muted);">WhatsApp:</span> 
+          <strong>{{ customer.whatsapp_number }}</strong>
+          <a href="https://wa.me/{{ customer.whatsapp_number|cut:' '|cut:'-'|cut:'+' }}" target="_blank" rel="noopener noreferrer" class="badge badge-success" style="margin-left: 6px; text-decoration: none; font-size: 0.7rem; background-color: #25d366; color: white;">
+            <i data-lucide="message-circle" style="width: 10px; height: 10px; vertical-align: middle;"></i> Chat
+          </a>
+        </div>
+        {% endif %}
         <div><span style="color: var(--text-muted);">Email:</span> {{ customer.email|default:"N/A" }}</div>
         <div><span style="color: var(--text-muted);">Company:</span> {{ customer.company|default:"N/A" }}</div>
-        <div><span style="color: var(--text-muted);">Location:</span> {{ customer.city }}{% if customer.state %}, {{ customer.state }}{% endif %}</div>
+        <div><span style="color: var(--text-muted);">Location:</span> {{ customer.city }}{% if customer.state %}, {{ customer.state }}{% endif %}{% if not customer.city and not customer.state %}N/A{% endif %}</div>
         <div><span style="color: var(--text-muted);">Source:</span> {{ customer.source }}</div>
+        <div><span style="color: var(--text-muted);">Status:</span> {% if customer.is_active %}<span class="badge badge-success">Active</span>{% else %}<span class="badge badge-secondary">Archived</span>{% endif %}</div>
       </div>
     </div>
+
+    {% if customer.notes %}
+    <div class="card" style="border-left: 4px solid var(--primary);">
+      <h3 class="card-title" style="margin-bottom: 0.5rem; font-size: 0.95rem; display: flex; align-items: center; gap: 0.4rem;">
+        <i data-lucide="file-text" style="width: 16px; height: 16px; color: var(--primary);"></i> Customer Profile Notes
+      </h3>
+      <p style="font-size: 0.85rem; color: var(--text-main); line-height: 1.5; margin: 0; white-space: pre-wrap;">{{ customer.notes }}</p>
+    </div>
+    {% endif %}
 
     <div class="card">
       <h3 class="card-title" style="margin-bottom: 1rem;">Campaign Enrollments</h3>

@@ -47,6 +47,13 @@
         <option value="Completed" {% if status_filter == 'Completed' %}selected{% endif %}>Completed</option>
       </select>
     </div>
+    <div style="width: 140px;">
+      <select name="activity" class="form-select">
+        <option value="">All Accounts</option>
+        <option value="active" {% if active_filter == 'active' %}selected{% endif %}>Active</option>
+        <option value="archived" {% if active_filter == 'archived' %}selected{% endif %}>Archived</option>
+      </select>
+    </div>
     <button type="submit" class="btn btn-secondary">
       <i data-lucide="filter"></i> Filter
     </button>
@@ -57,7 +64,7 @@
       <thead>
         <tr>
           <th>Customer Name</th>
-          <th class="col-hide-sm">Phone</th>
+          <th class="col-hide-sm">Phone / WhatsApp</th>
           <th class="col-hide-md">Email / Company</th>
           <th class="col-hide-lg">Location</th>
           <th>Enrolled Campaign(s)</th>
@@ -68,16 +75,28 @@
       </thead>
       <tbody>
         {% for item in customers_data %}
-        <tr>
+        <tr {% if not item.customer.is_active %}style="opacity: 0.75;"{% endif %}>
           <td>
-            <a href="{% url 'customer_detail' item.customer.pk %}" style="font-weight: 700; color: var(--text-main); display: block;" class="cell-truncate">
-              {{ item.customer.name }}
-            </a>
+            <div style="display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">
+              <a href="{% url 'customer_detail' item.customer.pk %}" style="font-weight: 700; color: var(--text-main);" class="cell-truncate">
+                {{ item.customer.name }}
+              </a>
+              {% if not item.customer.is_active %}
+                <span class="badge badge-secondary" style="font-size: 0.65rem; background: var(--bg-tertiary); color: var(--text-muted); border: 1px dashed var(--border-color); padding: 1px 5px;">Archived</span>
+              {% endif %}
+            </div>
             <div style="font-size: 0.74rem; color: var(--text-muted);">
               {{ item.customer.phone }}{% if item.customer.company %} &bull; {{ item.customer.company }}{% endif %}
             </div>
           </td>
-          <td class="col-hide-sm"><strong>{{ item.customer.phone }}</strong></td>
+          <td class="col-hide-sm">
+            <strong>{{ item.customer.phone }}</strong>
+            {% if item.customer.whatsapp_number %}
+              <div style="font-size: 0.72rem; color: #25d366; display: flex; align-items: center; gap: 3px; margin-top: 1px;">
+                <i data-lucide="message-circle" style="width: 11px; height: 11px;"></i> {{ item.customer.whatsapp_number }}
+              </div>
+            {% endif %}
+          </td>
           <td class="col-hide-md">
             <div style="font-size: 0.82rem;" class="cell-truncate-sm">{{ item.customer.email|default:"—" }}</div>
             <div style="font-size: 0.74rem; color: var(--text-muted);" class="cell-truncate-sm">{{ item.customer.company|default:"" }}</div>

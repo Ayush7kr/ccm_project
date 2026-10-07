@@ -93,16 +93,26 @@ This document provides a comprehensive overview of all functional modules and us
 
 ## 7. Customer Directory & Bulk Import (`/customers/`)
 
-- **Search & Filtering**: Instant search across customer name, phone, email, and company, with campaign and status filters.
+- **Search, Filtering & Activity Views**: Instant search across customer name, phone, WhatsApp number, email, and company, with campaign, assignment status, and activity status filters (`Active` vs `Archived`).
+- **Omnichannel Contact Details & Direct WhatsApp Integration**:
+  - Full support for optional `whatsapp_number` with validation (minimum 7 digits).
+  - Direct WhatsApp chat link (`https://wa.me/...`) rendered alongside contact numbers.
+  - Persistent customer profile `notes` card providing background context for agents before placing calls.
+- **Historical Data Safety & Archive Lifecycle**:
+  - Deleting a customer with existing historical records (calls, follow-ups, or campaign enrollments) safely deactivates and archives them (`is_active = False`) rather than executing a destructive cascade delete.
+  - Permanent deletion is reserved strictly for test leads with zero historical activity.
+  - Single-click Reactivate/Restore action allows administrators to restore archived customer profiles.
+  - Inactive customers are automatically excluded from new campaign assignments.
 - **CSV & Excel Import Engine**:
-  - Ingests `.csv` and modern `.xlsx` spreadsheet files.
+  - Ingests `.csv` and modern `.xlsx` spreadsheet files with complete support for `name`, `phone`, `whatsapp_number`, `email`, `company`, `address`, `city`, `state`, and `notes`.
   - **Dual-Encoding Handling**: Supports both `utf-8-sig` and `latin-1` (Windows ANSI) automatically, eliminating `UnicodeDecodeError` exceptions on Excel-saved CSV files.
-  - **Numeric Phone Normalization**: Automatically normalizes Excel float values (e.g. `9876543210.0`) to clean integer phone strings (`9876543210`).
-  - Validates missing names, phone formats, and duplicate phone numbers within the file and against the existing database.
+  - **Numeric Phone & WhatsApp Normalization**: Automatically normalizes Excel float values (e.g. `9876543210.0`) to clean integer phone strings (`9876543210`).
+  - Validates missing names, phone formats, WhatsApp formats, and duplicate phone numbers within the file and against the existing database.
   - Interactive pre-import review table highlighting valid vs invalid rows.
   - Automatic enrollment into selected target campaigns.
 - **Lead Assignment Engine (`/customers/assign/`)**:
-  - Assign unassigned leads to specific tele-callers individually or in bulk.
+  - Assign unassigned active leads to specific tele-callers individually or in bulk.
+  - Excludes inactive/archived leads from assignment.
   - Prevents double-assignment.
 
 | Bulk Ingestion & Validation Preview | Lead Assignment to Tele-callers |
@@ -114,11 +124,12 @@ This document provides a comprehensive overview of all functional modules and us
 ## 8. Live Call Console (`/calls/record/<assignment_id>/`)
 
 - **Tele-caller Calling Interface**:
-  - Customer contact details, history of previous calls, and notes.
+  - Customer contact details, phone number, optional WhatsApp number, persistent customer profile notes, and complete history of previous calls.
   - Live stopwatch timer tracking call duration in seconds.
   - Outcome selector: `Completed`, `No Answer`, `Unreachable`, `Busy`, `Follow-up Required`.
 - **Dynamic Survey Injection**: When marked `Completed`, questions from the campaign's questionnaire render dynamically for response logging.
 - **Instant Callback Scheduling**: Easily schedule follow-up date and time if callback is requested.
+- **Automated Milestone Trigger**: Automatically detects when a campaign reaches the 70% completed calls milestone and notifies administrators without duplicate alert spam.
 - **Post-Call Confirmation (`/calls/record/success/<call_id>/`)**: Direct buttons to proceed to the next customer in queue or return to the dashboard.
 
 ![Live Call Console and Questionnaire Logging](screenshots/telecaller_call_logging.png)
@@ -130,6 +141,9 @@ This document provides a comprehensive overview of all functional modules and us
 - **Zero-Side-Scroll Data Table**: Engineered with smart truncation (`.cell-truncate`), hover tooltips, and consolidated call information to display seamlessly on 1080p, 1366x768, and 1280x800 screens without horizontal scrolling.
 - **Contextual Actions Dropdown**: Polished action menu opening directly below the trigger button within screen boundaries.
 - **Automated Overdue Detection**: Background and on-demand detection converting pending follow-ups to `Overdue` once the scheduled date/time passes.
+- **Automated In-App Notification Lifecycle**:
+  - Creates follow-up reminders upon call completion.
+  - Automatically marks unread follow-up notifications as read when the follow-up task is marked completed or cancelled.
 - **Task Management**:
   - **Mark Complete**: Mark follow-up reminders as completed once handled. Re-completion of already completed tasks is strictly prevented.
   - **Reschedule Callback**: Overdue or pending callbacks can be rescheduled directly via the UI modal with an updated date/time.
@@ -161,7 +175,7 @@ This document provides a comprehensive overview of all functional modules and us
 ## 12. Analytics Engine & Report Center (`/analytics/` & `/reports/`)
 
 - **Centralized Engine (`analytics/engine.py`)**:
-  - Unified mathematical functions for KPIs, outcomes, trends, and agent comparisons.
+  - Unified mathematical calculations for core KPIs: Total Calls, Completed Calls, Conversion Rate, and **Avg Call Duration** (formatted in mm:ss).
   - Global date filters (`Today`, `Last 7 Days`, `Last 30 Days`, `This Month`, `Last Month`, `Custom`).
 - **Interactive Visualizations**:
   - Call Outcome distribution chart (Chart.js donut).

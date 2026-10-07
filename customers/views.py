@@ -20,6 +20,7 @@ def customer_list(request):
     search_query = request.GET.get('q', '').strip()
     campaign_filter = request.GET.get('campaign', '')
     status_filter = request.GET.get('status', '')
+    active_filter = request.GET.get('activity', '').strip()
 
     customers = Customer.objects.all()
 
@@ -34,6 +35,11 @@ def customer_list(request):
         customers = customers.filter(
             Q(id__in=assigned_customer_ids) | Q(id__in=followup_cust_ids)
         )
+
+    if active_filter == 'active':
+        customers = customers.filter(is_active=True)
+    elif active_filter == 'archived':
+        customers = customers.filter(is_active=False)
 
     if search_query:
         customers = customers.filter(
@@ -105,6 +111,7 @@ def customer_list(request):
         'search_query': search_query,
         'campaign_filter': campaign_filter,
         'status_filter': status_filter,
+        'active_filter': active_filter,
         'campaigns': campaigns,
     })
 
@@ -116,15 +123,18 @@ def customer_create(request):
     if request.method == 'POST':
         name = request.POST.get('name', '').strip()
         phone = request.POST.get('phone', '').strip()
+        whatsapp_number = request.POST.get('whatsapp_number', '').strip()
         email = request.POST.get('email', '').strip()
         company = request.POST.get('company', '').strip()
         address = request.POST.get('address', '').strip()
         city = request.POST.get('city', '').strip()
         state = request.POST.get('state', '').strip()
+        notes = request.POST.get('notes', '').strip()
 
         form_data = {
-            'name': name, 'phone': phone, 'email': email,
-            'company': company, 'address': address, 'city': city, 'state': state
+            'name': name, 'phone': phone, 'whatsapp_number': whatsapp_number,
+            'email': email, 'company': company, 'address': address,
+            'city': city, 'state': state, 'notes': notes
         }
 
         if not name:
@@ -134,11 +144,16 @@ def customer_create(request):
         elif Customer.objects.filter(phone=phone).exists():
             errors['phone'] = 'A customer with this phone number already exists.'
 
+        if whatsapp_number:
+            digits = ''.join(filter(str.isdigit, whatsapp_number))
+            if len(digits) < 7:
+                errors['whatsapp_number'] = 'Please enter a valid WhatsApp number (minimum 7 digits).'
+
         if not errors:
             customer = Customer.objects.create(
-                name=name, phone=phone, email=email,
-                company=company, address=address, city=city, state=state,
-                source='Manual Input'
+                name=name, phone=phone, whatsapp_number=whatsapp_number or None,
+                email=email, company=company, address=address, city=city, state=state,
+                notes=notes, is_active=True, source='Manual Input'
             )
             messages.success(request, f"Customer '{customer.name}' added successfully!")
             return redirect('customer_detail', pk=customer.pk)
@@ -194,34 +209,49 @@ def customer_edit(request, pk):
     if request.method == 'POST':
         name = request.POST.get('name', '').strip()
         phone = request.POST.get('phone', '').strip()
+        whatsapp_number = request.POST.get('whatsapp_number', '').strip()
         email = request.POST.get('email', '').strip()
         company = request.POST.get('company', '').strip()
         address = request.POST.get('address', '').strip()
         city = request.POST.get('city', '').strip()
         state = request.POST.get('state', '').strip()
+        notes = request.POST.get('notes', '').strip()
+        is_active = request.POST.get('is_active') == '1' or request.POST.get('is_active') == 'true' or 'is_active' in request.POST
 
         if not name: errors['name'] = 'Customer name is required.'
         if not phone: errors['phone'] = 'Phone number is required.'
         elif Customer.objects.filter(phone=phone).exclude(pk=customer.pk).exists():
             errors['phone'] = 'Another customer already uses this phone number.'
 
+        if whatsapp_number:
+            digits = ''.join(filter(str.isdigit, whatsapp_number))
+            if len(digits) < 7:
+                errors['whatsapp_number'] = 'Please enter a valid WhatsApp number (minimum 7 digits).'
+
         if not errors:
             customer.name = name
             customer.phone = phone
+            customer.whatsapp_number = whatsapp_number or None
             customer.email = email
             customer.company = company
             customer.address = address
             customer.city = city
             customer.state = state
+            customer.notes = notes
+            customer.is_active = is_active
             customer.save()
 
             messages.success(request, f"Customer '{customer.name}' updated successfully!")
             return redirect('customer_detail', pk=customer.pk)
 
     form_data = {
-        'name': customer.name, 'phone': customer.phone, 'email': customer.email,
-        'company': customer.company, 'address': customer.address,
-        'city': customer.city, 'state': customer.state
+        'name': customer.name, 'phone': customer.phone,
+        'whatsapp_number': customer.whatsapp_number or '',
+        'email': customer.email or '',
+        'company': customer.company or '', 'address': customer.address or '',
+        'city': customer.city or '', 'state': customer.state or '',
+        'notes': customer.notes or '',
+        'is_active': customer.is_active
     }
 
     return render(request, 'customers/form.html', {
@@ -234,12 +264,37 @@ def customer_edit(request, pk):
 @admin_required
 def customer_delete(request, pk):
     customer = get_object_or_404(Customer, pk=pk)
+    has_history = (
+        customer.call_records.exists() or
+        customer.follow_ups.exists() or
+        customer.campaign_links.exists()
+    )
     if request.method == 'POST':
         name = customer.name
-        customer.delete()
-        messages.success(request, f"Customer '{name}' deleted.")
+        if has_history:
+            customer.is_active = False
+            customer.save()
+            messages.warning(
+                request,
+                f"Customer '{name}' has existing historical records and has been deactivated/archived rather than permanently deleted."
+            )
+        else:
+            customer.delete()
+            messages.success(request, f"Customer '{name}' deleted.")
         return redirect('customer_list')
-    return render(request, 'customers/confirm_delete.html', {'customer': customer})
+    return render(request, 'customers/confirm_delete.html', {
+        'customer': customer,
+        'has_history': has_history
+    })
+
+@admin_required
+def customer_restore(request, pk):
+    customer = get_object_or_404(Customer, pk=pk)
+    if request.method == 'POST':
+        customer.is_active = True
+        customer.save()
+        messages.success(request, f"Customer '{customer.name}' has been reactivated.")
+    return redirect('customer_detail', pk=customer.pk)
 
 # --- CSV / EXCEL IMPORT WORKFLOW ---
 
@@ -249,9 +304,9 @@ def customer_import_sample(request):
     response = HttpResponse(content_type='text/csv')
     response['Content-Disposition'] = 'attachment; filename="ccm_customer_import_sample.csv"'
     writer = csv.writer(response)
-    writer.writerow(['name', 'phone', 'email', 'company', 'address', 'city', 'state'])
-    writer.writerow(['Acme Corp Lead', '+15550199', 'lead@acme.com', 'Acme Corp', '123 Tech Blvd', 'San Francisco', 'CA'])
-    writer.writerow(['Jane Smith', '+15550244', 'jane@smithco.org', 'Smith & Co', '456 Market St', 'Chicago', 'IL'])
+    writer.writerow(['name', 'phone', 'whatsapp_number', 'email', 'company', 'address', 'city', 'state', 'notes'])
+    writer.writerow(['Acme Corp Lead', '+15550199', '+15550199', 'lead@acme.com', 'Acme Corp', '123 Tech Blvd', 'San Francisco', 'CA', 'Interested in Enterprise plan'])
+    writer.writerow(['Jane Smith', '+15550244', '+15550245', 'jane@smithco.org', 'Smith & Co', '456 Market St', 'Chicago', 'IL', 'Prefers call in afternoon'])
     return response
 
 @admin_required
@@ -278,11 +333,14 @@ def customer_import(request):
                     phone=phone,
                     defaults={
                         'name': row['name'],
+                        'whatsapp_number': row.get('whatsapp_number') or None,
                         'email': row['email'],
                         'company': row['company'],
                         'address': row['address'],
                         'city': row['city'],
                         'state': row['state'],
+                        'notes': row.get('notes', ''),
+                        'is_active': True,
                         'source': 'CSV Import'
                     }
                 )
@@ -334,11 +392,13 @@ def customer_import(request):
                 for index, row in enumerate(reader, start=2):
                     name = str(row.get('name') or '').strip()
                     phone = str(row.get('phone') or '').strip()
+                    whatsapp_number = str(row.get('whatsapp_number') or row.get('whatsapp') or '').strip()
                     email = str(row.get('email') or '').strip()
                     company = str(row.get('company') or '').strip()
                     address = str(row.get('address') or '').strip()
                     city = str(row.get('city') or '').strip()
                     state = str(row.get('state') or '').strip()
+                    notes = str(row.get('notes') or '').strip()
 
                     row_error = None
                     if not name:
@@ -347,6 +407,8 @@ def customer_import(request):
                         row_error = 'Missing phone number'
                     elif email and '@' not in email:
                         row_error = 'Invalid email address format'
+                    elif whatsapp_number and len(''.join(filter(str.isdigit, whatsapp_number))) < 7:
+                        row_error = 'Invalid WhatsApp number format'
                     elif phone in seen_phones:
                         row_error = 'Duplicate phone number in file'
                     elif phone in existing_phones:
@@ -359,11 +421,13 @@ def customer_import(request):
                         'row_num': index,
                         'name': name,
                         'phone': phone,
+                        'whatsapp_number': whatsapp_number,
                         'email': email,
                         'company': company,
                         'address': address,
                         'city': city,
                         'state': state,
+                        'notes': notes,
                         'is_valid': row_error is None,
                         'error': row_error
                     })
@@ -391,16 +455,28 @@ def customer_import(request):
                     else:
                         phone = ''
 
+                    raw_wa = row_dict.get('whatsapp_number') or row_dict.get('whatsapp')
+                    if isinstance(raw_wa, float) and raw_wa.is_integer():
+                        whatsapp_number = str(int(raw_wa))
+                    elif raw_wa is not None:
+                        whatsapp_number = str(raw_wa).strip()
+                        if whatsapp_number.endswith('.0') and whatsapp_number[:-2].replace('+', '').isdigit():
+                            whatsapp_number = whatsapp_number[:-2]
+                    else:
+                        whatsapp_number = ''
+
                     email = str(row_dict.get('email') or '').strip()
                     company = str(row_dict.get('company') or '').strip()
                     address = str(row_dict.get('address') or '').strip()
                     city = str(row_dict.get('city') or '').strip()
                     state = str(row_dict.get('state') or '').strip()
+                    notes = str(row_dict.get('notes') or '').strip()
 
                     row_error = None
                     if not name: row_error = 'Missing customer name'
                     elif not phone: row_error = 'Missing phone number'
                     elif email and '@' not in email: row_error = 'Invalid email address format'
+                    elif whatsapp_number and len(''.join(filter(str.isdigit, whatsapp_number))) < 7: row_error = 'Invalid WhatsApp number format'
                     elif phone in seen_phones: row_error = 'Duplicate phone number in file'
                     elif phone in existing_phones: row_error = 'Phone number already registered'
 
@@ -410,11 +486,13 @@ def customer_import(request):
                         'row_num': index,
                         'name': name,
                         'phone': phone,
+                        'whatsapp_number': whatsapp_number,
                         'email': email,
                         'company': company,
                         'address': address,
                         'city': city,
                         'state': state,
+                        'notes': notes,
                         'is_valid': row_error is None,
                         'error': row_error
                     })
@@ -469,7 +547,7 @@ def customer_assign(request):
         assigned_count = 0
         with transaction.atomic():
             for cust_id in customer_ids:
-                customer = Customer.objects.filter(pk=cust_id).first()
+                customer = Customer.objects.filter(pk=cust_id, is_active=True).first()
                 if not customer:
                     continue
                 link, created = CampaignCustomer.objects.get_or_create(
@@ -498,7 +576,7 @@ def customer_assign(request):
 
     campaigns = Campaign.objects.filter(status__in=['Draft', 'Active'])
     telecallers = User.objects.filter(role='TELE_CALLER', is_active=True)
-    customers = Customer.objects.all()[:100]
+    customers = Customer.objects.filter(is_active=True)[:100]
 
     return render(request, 'customers/assign.html', {
         'campaigns': campaigns,

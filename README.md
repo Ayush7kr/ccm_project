@@ -70,11 +70,14 @@ A modern, production-ready tele-calling campaign and customer communication mana
   <img src="docs/screenshots/telecaller_call_logging.png" alt="Telecaller Live Call Console" width="800">
 </p>
 
-### 5. Customer & Lead Directory with Bulk Import & Assignment
-- Upload `.csv` or `.xlsx` files with column validation & duplicate phone number detection.
-- Pre-import preview with auto-enrollment into target campaigns.
-- Flexible round-robin and manual lead assignment to tele-callers.
-- Downloadable sample CSV template.
+### 5. Customer Directory, Omnichannel Contacts & Bulk Import
+- **Omnichannel Contact Details**: Support for phone and optional `whatsapp_number` with direct WhatsApp chat links (`https://wa.me/...`).
+- **Persistent Profile Notes**: Rich persistent `notes` field providing immediate context to tele-callers in the Live Call Console.
+- **Historical Data Safety**: Deactivating/archiving (`is_active = False`) protects historical call records, responses, and follow-ups from cascade deletion, with one-click restore and inactive assignment exclusion.
+- **Spreadsheet Ingestion**: Ingest `.csv` and `.xlsx` files with column validation, phone normalization, and duplicate detection.
+- **Pre-import Review**: Interactive preview with auto-enrollment into target campaigns.
+- **Flexible Lead Assignment**: Round-robin and manual lead assignment to active tele-callers.
+- **Downloadable Sample Template**: Pre-formatted CSV template with standard fields.
 
 | CSV/XLSX Bulk Lead Ingestion | Lead Assignment to Tele-callers |
 | :---: | :---: |
@@ -256,6 +259,7 @@ Run the full Django test suite:
 ```bash
 python manage.py test
 ```
+All **148 automated tests** pass with **0 failures and 0 errors** across all subsystems:
 
 Run tests for specific applications:
 ```bash

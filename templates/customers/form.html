@@ -23,7 +23,7 @@
       </div>
 
       <div class="form-group">
-        <label for="phone">Phone Number *</label>
+        <label for="phone">Primary Mobile Number *</label>
         <input type="text" id="phone" name="phone" class="form-control" value="{{ form_data.phone|default:'' }}" required placeholder="+1 555-0188">
         {% if errors.phone %}<div style="color: var(--danger); font-size: 0.75rem; margin-top: 0.2rem;">{{ errors.phone }}</div>{% endif %}
       </div>
@@ -31,18 +31,25 @@
 
     <div class="responsive-grid-1-1">
       <div class="form-group">
-        <label for="email">Email Address</label>
-        <input type="email" id="email" name="email" class="form-control" value="{{ form_data.email|default:'' }}" placeholder="robert@example.com">
+        <label for="whatsapp_number">WhatsApp Number (Optional)</label>
+        <input type="text" id="whatsapp_number" name="whatsapp_number" class="form-control" value="{{ form_data.whatsapp_number|default:'' }}" placeholder="+1 555-0189">
+        <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 0.2rem;">Optional. Include country code if applicable.</div>
+        {% if errors.whatsapp_number %}<div style="color: var(--danger); font-size: 0.75rem; margin-top: 0.2rem;">{{ errors.whatsapp_number }}</div>{% endif %}
       </div>
 
       <div class="form-group">
-        <label for="company">Company / Organization</label>
-        <input type="text" id="company" name="company" class="form-control" value="{{ form_data.company|default:'' }}" placeholder="Johnson Enterprises">
+        <label for="email">Email Address (Optional)</label>
+        <input type="email" id="email" name="email" class="form-control" value="{{ form_data.email|default:'' }}" placeholder="robert@example.com">
       </div>
     </div>
 
     <div class="form-group">
-      <label for="address">Street Address</label>
+      <label for="company">Company / Organization (Optional)</label>
+      <input type="text" id="company" name="company" class="form-control" value="{{ form_data.company|default:'' }}" placeholder="Johnson Enterprises">
+    </div>
+
+    <div class="form-group">
+      <label for="address">Street Address (Optional)</label>
       <input type="text" id="address" name="address" class="form-control" value="{{ form_data.address|default:'' }}" placeholder="100 Main Street, Suite 400">
     </div>
 
@@ -57,6 +64,24 @@
         <input type="text" id="state" name="state" class="form-control" value="{{ form_data.state|default:'' }}" placeholder="NY">
       </div>
     </div>
+
+    <div class="form-group">
+      <label for="notes">Customer Profile Notes (Optional)</label>
+      <textarea id="notes" name="notes" class="form-control" rows="3" placeholder="General customer background, preferences, or profile notes (separate from individual call notes)...">{{ form_data.notes|default:'' }}</textarea>
+      <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 0.2rem;">General profile information visible to assigned tele-callers on the live call console.</div>
+    </div>
+
+    {% if is_edit %}
+    <div class="form-group" style="margin-top: 0.5rem; padding: 0.75rem; background: var(--bg-primary); border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+      <label style="display: flex; align-items: center; gap: 0.6rem; cursor: pointer; margin-bottom: 0;">
+        <input type="checkbox" name="is_active" value="1" {% if form_data.is_active %}checked{% endif %}>
+        <span style="font-weight: 600; font-size: 0.9rem;">Active Customer Account</span>
+      </label>
+      <div style="font-size: 0.75rem; color: var(--text-muted); margin-left: 1.6rem; margin-top: 0.2rem;">
+        Uncheck to archive/deactivate this customer. Inactive customers cannot receive new campaign assignments, but all historical calls and responses remain intact.
+      </div>
+    </div>
+    {% endif %}
 
     <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem;">
       <a href="{% url 'customer_list' %}" class="btn btn-secondary">Cancel</a>

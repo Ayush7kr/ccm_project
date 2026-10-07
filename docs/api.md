@@ -95,3 +95,56 @@ All export endpoints require `ADMIN` authentication (`@admin_required`).
 ### `GET /notifications/<id>/read/`
 - **Purpose**: Marks a specific notification as read and redirects intelligently to its associated entity (e.g. campaign, customer, or follow-up list).
 - **Authentication**: Required (`@login_required` + recipient ownership check).
+
+---
+
+## 5. Customer Lifecycle & Ingestion Endpoints
+
+### `POST /customers/<id>/restore/`
+- **Purpose**: Reactivates an archived customer (`is_active = True`).
+- **Authentication**: Required (`ADMIN` role enforced via `@admin_required`).
+- **Response**: `302 Redirect` to `/customers/<id>/`.
+
+### `GET /customers/import/sample/`
+- **Purpose**: Downloads a pre-formatted sample CSV template containing all supported columns: `name`, `phone`, `whatsapp_number`, `email`, `company`, `address`, `city`, `state`, `notes`.
+- **Authentication**: Required (`ADMIN` role enforced via `@admin_required`).
+- **Response**: `Content-Type: text/csv`, attachment filename `"ccm_customer_import_sample.csv"`.
+
+### `POST /customers/import/`
+- **Purpose**: Two-step CSV/XLSX spreadsheet upload, validation preview, and confirmation ingestion engine.
+- **Authentication**: Required (`ADMIN` role enforced via `@admin_required`).
+- **File Limits**: Max 10 MB file size; accepts `.csv` and `.xlsx`; explicitly rejects legacy `.xls`.
+
+---
+
+## 6. Follow-up & Callback Action Endpoints
+
+### `POST /followups/<id>/complete/`
+- **Purpose**: Marks a pending or overdue follow-up task as completed. Automatically marks associated unread notifications as read.
+- **Authentication**: Required (`@login_required` + agent ownership check if tele-caller).
+- **State Constraint**: Rejects tasks that are already completed or cancelled.
+- **Response**: `302 Redirect` to `/followups/`.
+
+### `POST /followups/<id>/cancel/`
+- **Purpose**: Cancels a pending or overdue follow-up task. Automatically marks associated unread notifications as read.
+- **Authentication**: Required (`@login_required` + agent ownership check if tele-caller).
+- **State Constraint**: Rejects tasks that are already completed or cancelled.
+- **Response**: `302 Redirect` to `/followups/`.
+
+### `POST /followups/<id>/reschedule/`
+- **Purpose**: Reschedules a pending or overdue follow-up task to a new date and time.
+- **Authentication**: Required (`@login_required` + agent ownership check if tele-caller).
+- **Parameters**: `scheduled_date` (YYYY-MM-DD), `scheduled_time` (HH:MM), `notes` (optional).
+- **Response**: `302 Redirect` to `/followups/`.
+
+---
+
+## 7. Tele-caller Onboarding & Registration
+
+### `GET /register/` & `POST /register/`
+- **Purpose**: Public tele-caller self-registration portal.
+- **Authentication**: Public / unauthenticated.
+- **Role Enforcement**: Immutably pins `role='TELE_CALLER'` in Python code.
+- **Parameters**: `username`, `first_name`, `last_name`, `email`, `phone`, `password`, `confirm_password`, `terms`.
+- **Response**: `302 Redirect` to `/dashboard/` upon successful registration and automatic login.
+

@@ -60,7 +60,14 @@
               {% endif %}
             </td>
             <td><strong class="cell-truncate-sm">{{ r.name|default:"—" }}</strong></td>
-            <td style="white-space: nowrap;">{{ r.phone|default:"—" }}</td>
+            <td style="white-space: nowrap;">
+              {{ r.phone|default:"—" }}
+              {% if r.whatsapp_number %}
+                <div style="font-size: 0.72rem; color: #25d366; display: flex; align-items: center; gap: 2px; margin-top: 1px;">
+                  <i data-lucide="message-circle" style="width: 10px; height: 10px;"></i> WA: {{ r.whatsapp_number }}
+                </div>
+              {% endif %}
+            </td>
             <td class="col-hide-md"><span class="cell-truncate-sm">{{ r.email|default:"—" }}</span></td>
             <td class="col-hide-sm"><span class="cell-truncate-sm">{{ r.company|default:"—" }}</span></td>
             <td class="col-hide-lg" style="font-size: 0.8rem;">{{ r.city }}{% if r.state %}, {{ r.state }}{% endif %}</td>
